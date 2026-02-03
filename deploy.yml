@@ -1,0 +1,31 @@
+name: Deploy to Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - 'scripts/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      
+      - name: Run DB Migrations (if any)
+        run: |
+          supabase db push --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}

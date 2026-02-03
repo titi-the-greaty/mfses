@@ -1,0 +1,247 @@
+{
+  "name": "SeeSaw MFSES Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/30 9-16 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "cron-market-hours",
+      "name": "Market Hours Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "notes": "Every 30 min, Mon-Fri, 9AM-4PM ET"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "cron-daily",
+      "name": "Daily Full Refresh",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 500],
+      "notes": "6AM ET Mon-Fri — full refresh all 2501 stocks"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $now.hour >= 9 && $now.hour <= 16 && $now.weekday >= 1 && $now.weekday <= 5 }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "market-check",
+      "name": "Market Hours?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/markov",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "force_all", "value": "={{ $node['Daily Full Refresh'] ? true : false }}" }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "step1-markov",
+      "name": "Step 1: Markov Prioritizer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [700, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/collector",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "tickers", "value": "={{ $json.tickers }}" }
+          ]
+        },
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "step2-collector",
+      "name": "Step 2: Collector",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [950, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/scorer",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "tickers", "value": "={{ $node['Step 1: Markov Prioritizer'].json.tickers }}" }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "step3-scorer",
+      "name": "Step 3: Scorer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/state-updater",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "tickers", "value": "={{ $node['Step 1: Markov Prioritizer'].json.tickers }}" }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "step4-state",
+      "name": "Step 4: State Updater",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1450, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node['Step 2: Collector'].json.failed > ($node['Step 1: Markov Prioritizer'].json.count * 0.5) || $node['Step 3: Scorer'].json.failed > ($node['Step 1: Markov Prioritizer'].json.count * 0.5) }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "error-check",
+      "name": "Check for Errors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1700, 400]
+    },
+    {
+      "parameters": {
+        "fromEmail": "seesaw-alerts@yourdomain.com",
+        "toEmail": "YOUR_EMAIL_HERE",
+        "subject": "🚨 SeeSaw MFSES Pipeline Failed",
+        "text": "Pipeline failed at {{ $now.toISO() }}\n\nMarkov selected: {{ $node['Step 1: Markov Prioritizer'].json.count }} tickers\nCollected: {{ $node['Step 2: Collector'].json.collected }} ({{ $node['Step 2: Collector'].json.failed }} failed)\nScored: {{ $node['Step 3: Scorer'].json.scored }} ({{ $node['Step 3: Scorer'].json.failed }} failed)\n\nErrors:\n{{ $node['Step 2: Collector'].json.errors }}\n{{ $node['Step 3: Scorer'].json.errors }}",
+        "options": {}
+      },
+      "id": "alert-email",
+      "name": "🚨 Alert: Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1950, 500],
+      "notes": "Configure your SMTP credentials in n8n"
+    },
+    {
+      "parameters": {
+        "content": "✅ **SeeSaw Pipeline Complete**\n- Markov: {{ $node['Step 1: Markov Prioritizer'].json.count }} tickers selected\n- Collected: {{ $node['Step 2: Collector'].json.collected }}\n- Scored: {{ $node['Step 3: Scorer'].json.scored }}\n- Promotions: {{ $node['Step 4: State Updater'].json.promotions }}\n- Demotions: {{ $node['Step 4: State Updater'].json.demotions }}"
+      },
+      "id": "log-success",
+      "name": "✅ Log Success",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1950, 300],
+      "notes": "Replace with Slack/Discord webhook if desired"
+    }
+  ],
+  "connections": {
+    "Market Hours Cron": { "main": [[{ "node": "Market Hours?", "type": "main", "index": 0 }]] },
+    "Daily Full Refresh": { "main": [[{ "node": "Step 1: Markov Prioritizer", "type": "main", "index": 0 }]] },
+    "Market Hours?": {
+      "main": [
+        [{ "node": "Step 1: Markov Prioritizer", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Step 1: Markov Prioritizer": { "main": [[{ "node": "Step 2: Collector", "type": "main", "index": 0 }]] },
+    "Step 2: Collector": { "main": [[{ "node": "Step 3: Scorer", "type": "main", "index": 0 }]] },
+    "Step 3: Scorer": { "main": [[{ "node": "Step 4: State Updater", "type": "main", "index": 0 }]] },
+    "Step 4: State Updater": { "main": [[{ "node": "Check for Errors", "type": "main", "index": 0 }]] },
+    "Check for Errors": {
+      "main": [
+        [{ "node": "🚨 Alert: Email", "type": "main", "index": 0 }],
+        [{ "node": "✅ Log Success", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  }
+}
