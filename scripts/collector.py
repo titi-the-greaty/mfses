@@ -1,5 +1,5 @@
 """
-SeeSaw MFSES — Collector v2 (Step 2 of Pipeline)
+SeeSaw MFSES â Collector v2 (Step 2 of Pipeline)
 =================================================
 Fetches all data needed for MFSES v2 scoring:
 - Price, volume, market cap (snapshot)
@@ -18,12 +18,7 @@ import time
 import math
 import requests
 from datetime import datetime, timedelta, timezone
-from dotenv import load_dotenv
 from supabase import create_client, Client
-
-# Load .env from parent directory
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 # ============================================================
 # CONFIG
@@ -64,26 +59,26 @@ def _api_get(url: str, params: dict = None) -> dict | None:
                 return resp.json()
             elif resp.status_code == 429:
                 wait = RETRY_DELAY * (attempt + 2)
-                print(f"  ⚠️  Rate limited, waiting {wait}s...")
+                print(f"  â ï¸  Rate limited, waiting {wait}s...")
                 time.sleep(wait)
                 continue
             elif resp.status_code == 403:
-                print(f"  ❌ Forbidden (check API key): {url}")
+                print(f"  â Forbidden (check API key): {url}")
                 return None
             else:
-                print(f"  ⚠️  HTTP {resp.status_code} for {url}")
+                print(f"  â ï¸  HTTP {resp.status_code} for {url}")
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(RETRY_DELAY)
                     continue
                 return None
 
         except requests.exceptions.Timeout:
-            print(f"  ⚠️  Timeout, attempt {attempt + 1}/{MAX_RETRIES}")
+            print(f"  â ï¸  Timeout, attempt {attempt + 1}/{MAX_RETRIES}")
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
             continue
         except requests.exceptions.RequestException as e:
-            print(f"  ❌ Request error: {e}")
+            print(f"  â Request error: {e}")
             return None
 
     return None
@@ -123,7 +118,7 @@ def fetch_snapshots(tickers: list[str]) -> dict:
                     "previous_close": prev_close,
                     "price_change_pct": change_pct,
                     "volume": int(volume) if volume else 0,
-                    "market_cap": int(snap.get("market_cap")) if snap.get("market_cap") else None,
+                    "market_cap": snap.get("market_cap"),
                 }
 
         if batch_num < len(batches) - 1:
@@ -140,8 +135,8 @@ def fetch_ticker_details(ticker: str) -> dict:
     if data and "results" in data:
         r = data["results"]
         return {
-            "market_cap": int(r.get("market_cap")) if r.get("market_cap") else None,
-            "shares_outstanding": int(r.get("share_class_shares_outstanding") or r.get("weighted_shares_outstanding") or 0),
+            "market_cap": r.get("market_cap"),
+            "shares_outstanding": r.get("share_class_shares_outstanding") or r.get("weighted_shares_outstanding"),
             "company_name": r.get("name", ticker),
             "sector": r.get("sic_description", "Unknown"),
         }
@@ -506,7 +501,7 @@ def write_raw_data(supabase: Client, ticker: str, data: dict) -> bool:
             .execute()
         return True
     except Exception as e:
-        print(f"  ❌ DB write failed for {ticker}: {e}")
+        print(f"  â DB write failed for {ticker}: {e}")
         return False
 
 
@@ -532,10 +527,10 @@ def run_collector(tickers: list[str]) -> dict:
     errors = []
 
     # Step A: Batch fetch prices
-    print(f"📡 Fetching snapshots for {len(tickers)} tickers...")
+    print(f"ð¡ Fetching snapshots for {len(tickers)} tickers...")
     snapshots = fetch_snapshots(tickers)
     api_calls += math.ceil(len(tickers) / SNAPSHOT_BATCH_SIZE)
-    print(f"  ✅ Got {len(snapshots)} snapshots")
+    print(f"  â Got {len(snapshots)} snapshots")
 
     # Step B: Per-ticker enrichment
     for i, ticker in enumerate(tickers):
@@ -620,7 +615,7 @@ def run_collector(tickers: list[str]) -> dict:
         except Exception as e:
             failed += 1
             errors.append(f"{ticker}: {str(e)[:100]}")
-            print(f"  ❌ Error on {ticker}: {e}")
+            print(f"  â Error on {ticker}: {e}")
             continue
 
     result = {
@@ -632,9 +627,9 @@ def run_collector(tickers: list[str]) -> dict:
 
     print(f"\n{'='*60}")
     print(f"Collection complete:")
-    print(f"  ✅ Collected: {collected}")
-    print(f"  ❌ Failed: {failed}")
-    print(f"  📡 API calls: {api_calls}")
+    print(f"  â Collected: {collected}")
+    print(f"  â Failed: {failed}")
+    print(f"  ð¡ API calls: {api_calls}")
     print(f"{'='*60}")
 
     return result
@@ -652,25 +647,13 @@ if __name__ == "__main__":
 
     test_tickers = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "TSLA", "META", "JPM", "V", "KO"]
 
-    if "--all" in sys.argv:
-        # Fetch all tickers from database
-        supabase = init_supabase()
-        resp = supabase.table("tickers").select("ticker").eq("is_active", True).limit(3000).execute()
-        test_tickers = [r["ticker"] for r in resp.data]
-        print(f"{'='*60}")
-        print(f"SeeSaw MFSES — Collector v2 (ALL {len(test_tickers)} tickers)")
-        print(f"{'='*60}")
-    elif len(sys.argv) > 1:
-        test_tickers = [t for t in sys.argv[1:] if not t.startswith("--")]
-        print(f"{'='*60}")
-        print(f"SeeSaw MFSES — Collector v2 (Test Mode)")
-        print(f"Tickers: {test_tickers}")
-        print(f"{'='*60}")
-    else:
-        print(f"{'='*60}")
-        print(f"SeeSaw MFSES — Collector v2 (Test Mode)")
-        print(f"Tickers: {test_tickers}")
-        print(f"{'='*60}")
+    if len(sys.argv) > 1:
+        test_tickers = sys.argv[1:]
+
+    print(f"{'='*60}")
+    print(f"SeeSaw MFSES â Collector v2 (Test Mode)")
+    print(f"Tickers: {test_tickers}")
+    print(f"{'='*60}")
 
     result = run_collector(test_tickers)
     print(f"\nResult: {json.dumps(result, indent=2)}")

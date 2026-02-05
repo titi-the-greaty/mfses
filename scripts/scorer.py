@@ -1,12 +1,12 @@
 """
-SeeSaw MFSES — Scorer v2 (Step 3 of Pipeline)
+SeeSaw MFSES â Scorer v2 (Step 3 of Pipeline)
 ==============================================
 NEW FORMULAS:
-- Moat = (Market Cap score × 0.5) + (Analyst Rating score × 0.5)
-- Growth = (EPS Growth score × 0.66) + (OBV Trend score × 0.33)
+- Moat = (Market Cap score Ã 0.5) + (Analyst Rating score Ã 0.5)
+- Growth = (EPS Growth score Ã 0.66) + (OBV Trend score Ã 0.33)
 - Balance = Same (D/E ratio)
-- Valuation = Bond-adjusted Graham: (EPS × (8.5 + 2g) × 4.4) / Y
-- Sentiment = (Analyst Rating score × 0.5) + (Short Interest inverse × 0.5)
+- Valuation = Bond-adjusted Graham: (EPS Ã (8.5 + 2g) Ã 4.4) / Y
+- Sentiment = (Analyst Rating score Ã 0.5) + (Short Interest inverse Ã 0.5)
 - Dividends = Same
 
 Reads from Supabase stock_raw_data, writes to stock_scores.
@@ -15,12 +15,7 @@ Reads from Supabase stock_raw_data, writes to stock_scores.
 import os
 import json
 from datetime import datetime, timezone
-from dotenv import load_dotenv
 from supabase import create_client, Client
-
-# Load .env from parent directory
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 # ============================================================
 # CONFIG
@@ -73,7 +68,7 @@ def score_analyst_rating(rating: float | None) -> int:
         return 10  # Neutral if unknown
 
     # Scale 1-5 to 0-20
-    # 1.0 → 0, 2.0 → 5, 3.0 → 10, 4.0 → 15, 5.0 → 20
+    # 1.0 â 0, 2.0 â 5, 3.0 â 10, 4.0 â 15, 5.0 â 20
     score = (rating - 1) * 5
     return max(0, min(20, int(round(score))))
 
@@ -220,7 +215,7 @@ VALUATION_DEFAULT = 2
 def calculate_graham_adjusted(eps: float | None, eps_growth_rate: float | None) -> float | None:
     """
     Calculate bond-adjusted Graham Number.
-    Formula: (EPS × (8.5 + 2g) × 4.4) / Y
+    Formula: (EPS Ã (8.5 + 2g) Ã 4.4) / Y
     Where Y = current AAA bond yield
     """
     if eps is None or eps <= 0:
@@ -332,7 +327,7 @@ def score_dividends(dividend_yield: float | None, payout_ratio: float | None) ->
 
 def calculate_moat_score(market_cap: int | None, analyst_rating: float | None) -> int:
     """
-    MOAT = (Market Cap score × 0.5) + (Analyst Rating score × 0.5)
+    MOAT = (Market Cap score Ã 0.5) + (Analyst Rating score Ã 0.5)
     """
     mc_score = score_market_cap(market_cap)
     ar_score = score_analyst_rating(analyst_rating)
@@ -343,7 +338,7 @@ def calculate_moat_score(market_cap: int | None, analyst_rating: float | None) -
 
 def calculate_growth_score(eps_growth_rate: float | None, obv_trend: float | None, obv_divergence: float | None) -> int:
     """
-    GROWTH = (EPS Growth score × 0.66) + (OBV Trend score × 0.33)
+    GROWTH = (EPS Growth score Ã 0.66) + (OBV Trend score Ã 0.33)
     """
     eps_score = score_eps_growth(eps_growth_rate)
     obv_score = score_obv_trend(obv_trend, obv_divergence)
@@ -354,7 +349,7 @@ def calculate_growth_score(eps_growth_rate: float | None, obv_trend: float | Non
 
 def calculate_sentiment_score(analyst_rating: float | None, short_interest_pct: float | None) -> int:
     """
-    SENTIMENT = (Analyst Rating score × 0.5) + (Short Interest inverse score × 0.5)
+    SENTIMENT = (Analyst Rating score Ã 0.5) + (Short Interest inverse score Ã 0.5)
     """
     ar_score = score_analyst_rating(analyst_rating)
     si_score = score_short_interest(short_interest_pct)
@@ -370,7 +365,7 @@ def calculate_sentiment_score(analyst_rating: float | None, short_interest_pct: 
 def composite_short(moat, growth, balance, valuation, sentiment, dividends) -> float:
     """
     SHORT-TERM (0-6 months): Momentum and sentiment drive quick trades.
-    growth×0.35 + valuation×0.20 + sentiment×0.15 + moat×0.15 + balance×0.10 + dividends×0.05
+    growthÃ0.35 + valuationÃ0.20 + sentimentÃ0.15 + moatÃ0.15 + balanceÃ0.10 + dividendsÃ0.05
     """
     return round(
         growth     * 0.35 +
@@ -385,8 +380,8 @@ def composite_short(moat, growth, balance, valuation, sentiment, dividends) -> f
 
 def composite_mid(moat, growth, balance, valuation, sentiment, dividends) -> float:
     """
-    MID-TERM (2-3 years): Balanced approach — quality at fair prices.
-    moat×0.30 + valuation×0.20 + growth×0.20 + balance×0.15 + dividends×0.10 + sentiment×0.05
+    MID-TERM (2-3 years): Balanced approach â quality at fair prices.
+    moatÃ0.30 + valuationÃ0.20 + growthÃ0.20 + balanceÃ0.15 + dividendsÃ0.10 + sentimentÃ0.05
     """
     return round(
         moat       * 0.30 +
@@ -401,8 +396,8 @@ def composite_mid(moat, growth, balance, valuation, sentiment, dividends) -> flo
 
 def composite_long(moat, growth, balance, valuation, sentiment, dividends) -> float:
     """
-    LONG-TERM (5+ years): Moat and balance dominate — Buffett style.
-    moat×0.30 + balance×0.25 + dividends×0.15 + valuation×0.15 + growth×0.10 + sentiment×0.05
+    LONG-TERM (5+ years): Moat and balance dominate â Buffett style.
+    moatÃ0.30 + balanceÃ0.25 + dividendsÃ0.15 + valuationÃ0.15 + growthÃ0.10 + sentimentÃ0.05
     """
     return round(
         moat       * 0.30 +
@@ -506,11 +501,10 @@ def run_scorer(tickers: list[str] = None) -> dict:
         result = supabase.table("stock_raw_data") \
             .select("*") \
             .not_.is_("price", "null") \
-            .limit(3000) \
             .execute()
         all_raw = result.data or []
 
-    print(f"🧮 Scoring {len(all_raw)} stocks with MFSES v2...")
+    print(f"ð§® Scoring {len(all_raw)} stocks with MFSES v2...")
 
     scored = 0
     failed = 0
@@ -525,7 +519,7 @@ def run_scorer(tickers: list[str] = None) -> dict:
         except Exception as e:
             failed += 1
             errors.append(f"{raw.get('ticker', '?')}: {str(e)[:100]}")
-            print(f"  ❌ Scoring failed for {raw.get('ticker', '?')}: {e}")
+            print(f"  â Scoring failed for {raw.get('ticker', '?')}: {e}")
 
     # Batch upsert
     if all_scores:
@@ -536,7 +530,7 @@ def run_scorer(tickers: list[str] = None) -> dict:
                     .upsert(batch, on_conflict="ticker") \
                     .execute()
             except Exception as e:
-                print(f"  ❌ Batch upsert failed: {e}")
+                print(f"  â Batch upsert failed: {e}")
                 for s in batch:
                     try:
                         supabase.table("stock_scores") \
@@ -571,12 +565,12 @@ def run_scorer(tickers: list[str] = None) -> dict:
 
     print(f"\n{'='*60}")
     print(f"Scoring complete (MFSES v2):")
-    print(f"  ✅ Scored: {scored}")
-    print(f"  ❌ Failed: {failed}")
-    print(f"  📊 Avg Short: {result['avg_short']}")
-    print(f"  📊 Avg Mid:   {result['avg_mid']}")
-    print(f"  📊 Avg Long:  {result['avg_long']}")
-    print(f"  👑 Triple Crowns: {triple_crowns}")
+    print(f"  â Scored: {scored}")
+    print(f"  â Failed: {failed}")
+    print(f"  ð Avg Short: {result['avg_short']}")
+    print(f"  ð Avg Mid:   {result['avg_mid']}")
+    print(f"  ð Avg Long:  {result['avg_long']}")
+    print(f"  ð Triple Crowns: {triple_crowns}")
     print(f"{'='*60}")
 
     return result
@@ -641,19 +635,19 @@ if __name__ == "__main__":
             },
         ]
 
-        print(f"{'Ticker':<15} {'Moat':>5} {'Grw':>5} {'Bal':>5} {'Val':>5} {'Sen':>5} {'Div':>5} │ {'Short':>6} {'Mid':>6} {'Long':>6}")
-        print("─" * 85)
+        print(f"{'Ticker':<15} {'Moat':>5} {'Grw':>5} {'Bal':>5} {'Val':>5} {'Sen':>5} {'Div':>5} â {'Short':>6} {'Mid':>6} {'Long':>6}")
+        print("â" * 85)
 
         for tc in test_cases:
             s = score_stock(tc)
             total = s["moat_score"] + s["growth_score"] + s["balance_score"] + s["valuation_score"] + s["sentiment_score"] + s["dividend_score"]
-            print(f"{tc['ticker']:<15} {s['moat_score']:>5} {s['growth_score']:>5} {s['balance_score']:>5} {s['valuation_score']:>5} {s['sentiment_score']:>5} {s['dividend_score']:>5} │ {s['mfses_short']:>6.1f} {s['mfses_mid']:>6.1f} {s['mfses_long']:>6.1f}")
+            print(f"{tc['ticker']:<15} {s['moat_score']:>5} {s['growth_score']:>5} {s['balance_score']:>5} {s['valuation_score']:>5} {s['sentiment_score']:>5} {s['dividend_score']:>5} â {s['mfses_short']:>6.1f} {s['mfses_mid']:>6.1f} {s['mfses_long']:>6.1f}")
 
-        print("\n✅ Test complete")
+        print("\nâ Test complete")
 
     else:
         print(f"{'='*60}")
-        print(f"SeeSaw MFSES — Scorer v2")
+        print(f"SeeSaw MFSES â Scorer v2")
         print(f"{'='*60}")
 
         result = run_scorer()
