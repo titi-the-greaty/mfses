@@ -20,7 +20,12 @@ import json
 import time
 import requests
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Load .env from parent directory
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 # ============================================================
 # CONFIG
@@ -163,7 +168,7 @@ def fetch_all_tickers(min_market_cap: int = 300_000_000) -> list[dict]:
     url = f"{POLYGON_BASE}/v3/reference/tickers"
     params = {
         "market": "stocks",
-        "exchange": "XNAS,XNYS",  # NASDAQ + NYSE
+        "locale": "us",            # US stocks only
         "type": "CS",              # Common Stock only
         "active": "true",
         "limit": 1000,

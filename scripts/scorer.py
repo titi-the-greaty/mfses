@@ -1,19 +1,26 @@
 """
-SeeSaw MFSES — Scorer (Step 3 of Pipeline)
-=============================================
-Reads raw data from Supabase (written by collector in Step 2).
-Calculates all 6 MFSES factor scores (0-20 each).
-Calculates Graham Number and upside %.
-Calculates 3 time horizon composite scores.
-Writes results to stock_scores table.
+SeeSaw MFSES — Scorer v2 (Step 3 of Pipeline)
+==============================================
+NEW FORMULAS:
+- Moat = (Market Cap score × 0.5) + (Analyst Rating score × 0.5)
+- Growth = (EPS Growth score × 0.66) + (OBV Trend score × 0.33)
+- Balance = Same (D/E ratio)
+- Valuation = Bond-adjusted Graham: (EPS × (8.5 + 2g) × 4.4) / Y
+- Sentiment = (Analyst Rating score × 0.5) + (Short Interest inverse × 0.5)
+- Dividends = Same
 
-This is the BRAIN of MFSES — all the formulas live here.
+Reads from Supabase stock_raw_data, writes to stock_scores.
 """
 
 import os
 import json
 from datetime import datetime, timezone
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Load .env from parent directory
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 # ============================================================
 # CONFIG
@@ -22,154 +29,207 @@ from supabase import create_client, Client
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
+# Graham bond yield adjustment
+GRAHAM_ORIGINAL_YIELD = 4.4   # AAA yield when Graham wrote formula (1962)
+CURRENT_AAA_YIELD = 5.15      # Current AAA corporate bond yield (update quarterly)
+
 
 # ============================================================
-# FACTOR 1: MOAT SCORE (0-20)
+# COMPONENT SCORES (used to build factor scores)
 # ============================================================
-# Market cap as proxy for competitive advantage.
-# Bigger company = wider moat = harder to disrupt.
 
-MOAT_THRESHOLDS = [
+# --- Market Cap Score (0-20) ---
+MARKET_CAP_THRESHOLDS = [
     (1_000_000_000_000, 20),   # $1T+
     (500_000_000_000,   19),   # $500B+
     (200_000_000_000,   18),   # $200B+
-    (100_000_000_000,   18),   # $100B+  (same as $200B — both mega)
-    (50_000_000_000,    16),   # $50B+
-    (10_000_000_000,    15),   # $10B+
-    (5_000_000_000,     13),   # $5B+
-    (2_000_000_000,     12),   # $2B+
-    (1_000_000_000,     10),   # $1B+
+    (100_000_000_000,   17),   # $100B+
+    (50_000_000_000,    15),   # $50B+
+    (20_000_000_000,    13),   # $20B+
+    (10_000_000_000,    12),   # $10B+
+    (5_000_000_000,     10),   # $5B+
+    (2_000_000_000,      8),   # $2B+
+    (1_000_000_000,      6),   # $1B+
 ]
-MOAT_DEFAULT = 8               # < $1B
+MARKET_CAP_DEFAULT = 4
 
-def score_moat(market_cap: int | None) -> int:
-    """Score market cap as a moat proxy. Returns 0-20."""
+def score_market_cap(market_cap: int | None) -> int:
+    """Score market cap alone. Returns 0-20."""
     if not market_cap or market_cap <= 0:
-        return MOAT_DEFAULT
-    
-    for threshold, score in MOAT_THRESHOLDS:
+        return MARKET_CAP_DEFAULT
+
+    for threshold, score in MARKET_CAP_THRESHOLDS:
         if market_cap >= threshold:
             return score
-    
-    return MOAT_DEFAULT
+
+    return MARKET_CAP_DEFAULT
 
 
-# ============================================================
-# FACTOR 2: GROWTH SCORE (0-20)
-# ============================================================
-# Year-over-year EPS growth rate.
-# High growth = strong earnings momentum.
+# --- Analyst Rating Score (0-20) ---
+# Analyst rating is typically 1-5 scale (1=strong sell, 5=strong buy)
+def score_analyst_rating(rating: float | None) -> int:
+    """Score analyst rating. Returns 0-20."""
+    if rating is None:
+        return 10  # Neutral if unknown
 
-GROWTH_THRESHOLDS = [
-    (100, 20),   # 100%+ growth
-    (66,  19),   # 66%+
-    (50,  18),   # 50%+
-    (40,  17),   # 40%+
-    (30,  16),   # 30%+
-    (25,  15),   # 25%+
-    (20,  14),   # 20%+
-    (15,  13),   # 15%+
-    (10,  12),   # 10%+
+    # Scale 1-5 to 0-20
+    # 1.0 → 0, 2.0 → 5, 3.0 → 10, 4.0 → 15, 5.0 → 20
+    score = (rating - 1) * 5
+    return max(0, min(20, int(round(score))))
+
+
+# --- EPS Growth Score (0-20) ---
+# Tightened thresholds
+EPS_GROWTH_THRESHOLDS = [
+    (150, 20),   # 150%+ (was 100%)
+    (100, 19),   # 100%+
+    (75,  18),   # 75%+
+    (50,  17),   # 50%+
+    (40,  16),   # 40%+
+    (30,  15),   # 30%+
+    (25,  14),   # 25%+
+    (20,  13),   # 20%+
+    (15,  12),   # 15%+
+    (10,  11),   # 10%+
     (5,   10),   # 5%+
-    (0,    8),   # 0-5% (flat)
-    (-5,   6),   # Slight decline
+    (0,    8),   # Flat
+    (-10,  6),   # Slight decline
+    (-25,  4),   # Moderate decline
 ]
-GROWTH_DEFAULT = 4             # Declining > 5%
+EPS_GROWTH_DEFAULT = 2
 
-def score_growth(eps_growth_rate: float | None) -> int:
-    """Score EPS growth rate. Returns 0-20."""
+def score_eps_growth(eps_growth_rate: float | None) -> int:
+    """Score EPS growth rate alone. Returns 0-20."""
     if eps_growth_rate is None:
-        return 8  # Unknown = neutral
-    
-    for threshold, score in GROWTH_THRESHOLDS:
+        return 8  # Neutral if unknown
+
+    for threshold, score in EPS_GROWTH_THRESHOLDS:
         if eps_growth_rate >= threshold:
             return score
-    
-    return GROWTH_DEFAULT
+
+    return EPS_GROWTH_DEFAULT
 
 
-# ============================================================
-# FACTOR 3: BALANCE SCORE (0-20)
-# ============================================================
-# Debt-to-equity ratio.
-# Lower debt = more financial resilience.
+# --- OBV Trend Score (0-20) ---
+# Based on OBV trend and price/OBV divergence
+def score_obv_trend(obv_trend: float | None, divergence: float | None) -> int:
+    """
+    Score OBV trend. Returns 0-20.
 
+    obv_trend: % change in OBV over 20 days
+    divergence: OBV trend minus price trend (positive = bullish divergence)
+    """
+    if obv_trend is None:
+        return 10  # Neutral if unknown
+
+    score = 10  # Start neutral
+
+    # OBV trend component
+    if obv_trend > 50:
+        score += 5
+    elif obv_trend > 25:
+        score += 4
+    elif obv_trend > 10:
+        score += 3
+    elif obv_trend > 5:
+        score += 2
+    elif obv_trend > 0:
+        score += 1
+    elif obv_trend > -5:
+        score += 0
+    elif obv_trend > -10:
+        score -= 1
+    elif obv_trend > -25:
+        score -= 3
+    else:
+        score -= 5
+
+    # Divergence component (OBV rising while price falling = bullish)
+    if divergence is not None:
+        if divergence > 20:
+            score += 5   # Strong bullish divergence
+        elif divergence > 10:
+            score += 3
+        elif divergence > 5:
+            score += 2
+        elif divergence > -5:
+            score += 0   # No divergence
+        elif divergence > -10:
+            score -= 2
+        elif divergence > -20:
+            score -= 3
+        else:
+            score -= 5   # Strong bearish divergence
+
+    return max(0, min(20, score))
+
+
+# --- Balance Score (D/E) --- UNCHANGED
 BALANCE_THRESHOLDS = [
-    (0.1, 20),   # Almost no debt
-    (0.2, 19),   # Very low
-    (0.3, 18),   # Low
-    (0.5, 16),   # Moderate
-    (0.7, 14),   # Acceptable
-    (1.0, 12),   # Moderate-high
-    (1.5, 10),   # High
-    (2.0,  8),   # Very high
-    (3.0,  6),   # Dangerous
+    (0.1, 20),
+    (0.2, 19),
+    (0.3, 18),
+    (0.5, 16),
+    (0.7, 14),
+    (1.0, 12),
+    (1.5, 10),
+    (2.0,  8),
+    (3.0,  6),
 ]
-BALANCE_DEFAULT = 4            # Extreme debt (D/E > 3.0)
-BALANCE_NEGATIVE_EQUITY = 2    # Red flag: negative shareholder equity
+BALANCE_DEFAULT = 4
+BALANCE_NEGATIVE_EQUITY = 2
 
 def score_balance(debt_to_equity: float | None, shareholders_equity: int | None = None) -> int:
     """Score debt-to-equity ratio. Returns 0-20."""
-    # Negative equity = red flag
     if shareholders_equity is not None and shareholders_equity < 0:
         return BALANCE_NEGATIVE_EQUITY
-    
+
     if debt_to_equity is None:
-        return 10  # Unknown = below-neutral
-    
+        return 10
+
     if debt_to_equity < 0:
-        # Negative D/E usually means negative debt (net cash) = great
-        return 20
-    
+        return 20  # Net cash position
+
     for threshold, score in BALANCE_THRESHOLDS:
         if debt_to_equity <= threshold:
             return score
-    
+
     return BALANCE_DEFAULT
 
 
-# ============================================================
-# FACTOR 4: VALUATION SCORE (0-20)
-# ============================================================
-# Graham Number: intrinsic value vs current price.
-# Positive upside = undervalued = good.
-#
-# Graham Formula:
-#   g_capped = min(eps_growth_rate, 25)     ← cap growth at 25% for conservatism
-#   graham_value = EPS × (8.5 + 2 × g_capped)
-#   upside_pct = ((graham_value - price) / price) × 100
-
+# --- Valuation Score (Graham Upside) ---
+# TIGHTENED thresholds
 VALUATION_THRESHOLDS = [
-    (100,  20),   # 100%+ undervalued (2x upside)
-    (75,   19),   # 75-100%
-    (50,   18),   # 50-75%
-    (40,   17),   # 40-50%
-    (30,   16),   # 30-40%
-    (20,   15),   # 20-30%
-    (10,   14),   # 10-20%
-    (5,    13),   # 5-10%
-    (0,    12),   # Fairly valued
-    (-10,  10),   # Slightly overvalued
-    (-20,   8),   # Moderately overvalued
-    (-30,   6),   # Overvalued
+    (150, 20),   # 150%+ undervalued (was 100%)
+    (100, 19),   # 100%+ undervalued
+    (75,  18),   # 75%+
+    (50,  17),   # 50%+
+    (40,  16),   # 40%+
+    (30,  15),   # 30%+
+    (20,  14),   # 20%+
+    (10,  13),   # 10%+
+    (5,   12),   # 5%+
+    (0,   11),   # Fairly valued
+    (-10, 10),   # Slightly overvalued
+    (-20,  8),   # Moderately overvalued
+    (-30,  6),   # Overvalued
+    (-50,  4),   # Very overvalued
 ]
-VALUATION_DEFAULT = 4          # Severely overvalued (< -30%)
+VALUATION_DEFAULT = 2
 
-GRAHAM_GROWTH_CAP = 25         # Max growth rate used in Graham formula
-GRAHAM_BASE_PE = 8.5           # P/E for a no-growth company
-
-def calculate_graham(eps: float | None, eps_growth_rate: float | None) -> float | None:
+def calculate_graham_adjusted(eps: float | None, eps_growth_rate: float | None) -> float | None:
     """
-    Calculate Graham Number (intrinsic value per share).
-    Returns None if EPS data is insufficient.
+    Calculate bond-adjusted Graham Number.
+    Formula: (EPS × (8.5 + 2g) × 4.4) / Y
+    Where Y = current AAA bond yield
     """
     if eps is None or eps <= 0:
         return None
-    
+
     growth = eps_growth_rate if eps_growth_rate is not None else 0
-    g_capped = min(max(growth, 0), GRAHAM_GROWTH_CAP)  # Clamp: 0 to 25
-    
-    graham_value = eps * (GRAHAM_BASE_PE + 2 * g_capped)
+    g_capped = min(max(growth, 0), 25)  # Cap growth at 25%
+
+    graham_value = (eps * (8.5 + 2 * g_capped) * GRAHAM_ORIGINAL_YIELD) / CURRENT_AAA_YIELD
     return round(graham_value, 4)
 
 
@@ -183,107 +243,133 @@ def calculate_upside(graham_value: float | None, price: float | None) -> float |
 def score_valuation(upside_pct: float | None) -> int:
     """Score Graham upside percentage. Returns 0-20."""
     if upside_pct is None:
-        return 10  # Unknown = slightly below neutral
-    
+        return 10
+
     for threshold, score in VALUATION_THRESHOLDS:
         if upside_pct >= threshold:
             return score
-    
+
     return VALUATION_DEFAULT
 
 
-# ============================================================
-# FACTOR 5: SENTIMENT SCORE (0-20)
-# ============================================================
-# Placeholder for now. Future: Claude API news analysis.
-# All stocks get neutral 12 until NewsIQ is integrated.
-
-SENTIMENT_DEFAULT = 12
-
-def score_sentiment(news_count_1h: int | None = None, news_count_24h: int | None = None) -> int:
+# --- Short Interest Score (0-20) ---
+# High short interest = bearish = LOW score (inverse)
+def score_short_interest(short_interest_pct: float | None) -> int:
     """
-    Score market sentiment. Currently returns neutral placeholder.
-    
-    Future implementation will analyze:
-    - News article sentiment via Claude API
-    - Reddit/social media sentiment
-    - Analyst rating changes
-    - Insider buying/selling
+    Score short interest (inverse - high short = low score).
+    Returns 0-20.
     """
-    # TODO: Integrate NewsIQ (Claude API sentiment analysis)
-    # For now, return neutral
-    return SENTIMENT_DEFAULT
+    if short_interest_pct is None:
+        return 10  # Neutral if unknown
+
+    # Typical ranges: <2% low, 2-5% normal, 5-10% elevated, >10% high
+    if short_interest_pct < 1:
+        return 20
+    elif short_interest_pct < 2:
+        return 18
+    elif short_interest_pct < 3:
+        return 16
+    elif short_interest_pct < 5:
+        return 14
+    elif short_interest_pct < 7:
+        return 12
+    elif short_interest_pct < 10:
+        return 10
+    elif short_interest_pct < 15:
+        return 8
+    elif short_interest_pct < 20:
+        return 6
+    elif short_interest_pct < 30:
+        return 4
+    else:
+        return 2
 
 
-# ============================================================
-# FACTOR 6: DIVIDENDS SCORE (0-20)
-# ============================================================
-# Dividend yield + payout ratio sustainability.
-# High yield with sustainable payout = good.
-# Unsustainable payout (>100%) = penalty.
-
+# --- Dividends Score --- UNCHANGED
 DIVIDEND_YIELD_THRESHOLDS = [
-    (6.0, 18),   # 6%+ yield
-    (5.0, 17),   # 5%+
-    (4.0, 16),   # 4%+
-    (3.5, 15),   # 3.5%+
-    (3.0, 14),   # 3%+
-    (2.5, 13),   # 2.5%+
-    (2.0, 12),   # 2%+
-    (1.5, 11),   # 1.5%+
-    (1.0, 10),   # 1%+
-    (0.5,  8),   # 0.5%+
+    (6.0, 18),
+    (5.0, 17),
+    (4.0, 16),
+    (3.5, 15),
+    (3.0, 14),
+    (2.5, 13),
+    (2.0, 12),
+    (1.5, 11),
+    (1.0, 10),
+    (0.5,  8),
 ]
-DIVIDEND_NO_YIELD = 5          # No dividend at all
-
-# Payout ratio adjustments
-PAYOUT_UNSUSTAINABLE = -5      # > 100% (paying more than earning)
-PAYOUT_RISKY = -2              # > 80%
-PAYOUT_ACCEPTABLE = 0          # 40-80%
-PAYOUT_ROOM_TO_GROW = 2        # < 40% (can increase dividend)
+DIVIDEND_NO_YIELD = 5
+PAYOUT_UNSUSTAINABLE = -5
+PAYOUT_RISKY = -2
+PAYOUT_ROOM_TO_GROW = 2
 
 def score_dividends(dividend_yield: float | None, payout_ratio: float | None) -> int:
-    """
-    Score dividend yield with payout ratio adjustment. Returns 0-20.
-    
-    Base score from yield, then adjust for payout sustainability.
-    Final score clamped to [0, 20].
-    """
-    # Base score from yield
+    """Score dividend yield with payout ratio adjustment. Returns 0-20."""
     if dividend_yield is None or dividend_yield <= 0:
         base = DIVIDEND_NO_YIELD
     else:
-        base = DIVIDEND_NO_YIELD  # Default if below all thresholds
+        base = DIVIDEND_NO_YIELD
         for threshold, score in DIVIDEND_YIELD_THRESHOLDS:
             if dividend_yield >= threshold:
                 base = score
                 break
-    
-    # Payout ratio adjustment
+
     adjustment = 0
     if payout_ratio is not None and dividend_yield and dividend_yield > 0:
         if payout_ratio > 100:
-            adjustment = PAYOUT_UNSUSTAINABLE     # -5
+            adjustment = PAYOUT_UNSUSTAINABLE
         elif payout_ratio > 80:
-            adjustment = PAYOUT_RISKY             # -2
+            adjustment = PAYOUT_RISKY
         elif payout_ratio < 40:
-            adjustment = PAYOUT_ROOM_TO_GROW      # +2
-        # else: 40-80% = acceptable, no adjustment
-    
-    # Clamp to [0, 20]
+            adjustment = PAYOUT_ROOM_TO_GROW
+
     return max(0, min(20, base + adjustment))
+
+
+# ============================================================
+# MAIN FACTOR SCORES (combining components)
+# ============================================================
+
+def calculate_moat_score(market_cap: int | None, analyst_rating: float | None) -> int:
+    """
+    MOAT = (Market Cap score × 0.5) + (Analyst Rating score × 0.5)
+    """
+    mc_score = score_market_cap(market_cap)
+    ar_score = score_analyst_rating(analyst_rating)
+
+    combined = (mc_score * 0.5) + (ar_score * 0.5)
+    return max(0, min(20, int(round(combined))))
+
+
+def calculate_growth_score(eps_growth_rate: float | None, obv_trend: float | None, obv_divergence: float | None) -> int:
+    """
+    GROWTH = (EPS Growth score × 0.66) + (OBV Trend score × 0.33)
+    """
+    eps_score = score_eps_growth(eps_growth_rate)
+    obv_score = score_obv_trend(obv_trend, obv_divergence)
+
+    combined = (eps_score * 0.66) + (obv_score * 0.33)
+    return max(0, min(20, int(round(combined))))
+
+
+def calculate_sentiment_score(analyst_rating: float | None, short_interest_pct: float | None) -> int:
+    """
+    SENTIMENT = (Analyst Rating score × 0.5) + (Short Interest inverse score × 0.5)
+    """
+    ar_score = score_analyst_rating(analyst_rating)
+    si_score = score_short_interest(short_interest_pct)
+
+    combined = (ar_score * 0.5) + (si_score * 0.5)
+    return max(0, min(20, int(round(combined))))
 
 
 # ============================================================
 # TIME HORIZON COMPOSITES (0.0 - 20.0)
 # ============================================================
-# Same 6 factors, different weights per investment timeframe.
-# All weights sum to 1.0 for each horizon.
 
 def composite_short(moat, growth, balance, valuation, sentiment, dividends) -> float:
     """
     SHORT-TERM (0-6 months): Momentum and sentiment drive quick trades.
-    
     growth×0.35 + valuation×0.20 + sentiment×0.15 + moat×0.15 + balance×0.10 + dividends×0.05
     """
     return round(
@@ -300,7 +386,6 @@ def composite_short(moat, growth, balance, valuation, sentiment, dividends) -> f
 def composite_mid(moat, growth, balance, valuation, sentiment, dividends) -> float:
     """
     MID-TERM (2-3 years): Balanced approach — quality at fair prices.
-    
     moat×0.30 + valuation×0.20 + growth×0.20 + balance×0.15 + dividends×0.10 + sentiment×0.05
     """
     return round(
@@ -317,7 +402,6 @@ def composite_mid(moat, growth, balance, valuation, sentiment, dividends) -> flo
 def composite_long(moat, growth, balance, valuation, sentiment, dividends) -> float:
     """
     LONG-TERM (5+ years): Moat and balance dominate — Buffett style.
-    
     moat×0.30 + balance×0.25 + dividends×0.15 + valuation×0.15 + growth×0.10 + sentiment×0.05
     """
     return round(
@@ -336,44 +420,41 @@ def composite_long(moat, growth, balance, valuation, sentiment, dividends) -> fl
 # ============================================================
 
 def score_stock(raw: dict) -> dict:
-    """
-    Calculate all MFSES scores for a single stock.
-    
-    Input: raw data dict from stock_raw_data table.
-    Output: scores dict ready for stock_scores table.
-    """
+    """Calculate all MFSES v2 scores for a single stock."""
     ticker = raw["ticker"]
-    
-    # --- Extract raw values ---
+
+    # Extract raw values
     market_cap = raw.get("market_cap")
+    analyst_rating = raw.get("analyst_rating")
     eps_current = raw.get("eps_current")
     eps_growth_rate = raw.get("eps_growth_rate")
+    obv_trend = raw.get("obv_trend")
+    obv_divergence = raw.get("obv_price_divergence")
     debt_to_equity = raw.get("debt_to_equity")
     shareholders_equity = raw.get("shareholders_equity")
     price = raw.get("price")
+    short_interest_pct = raw.get("short_interest_pct")
     dividend_yield = raw.get("dividend_yield")
     payout_ratio = raw.get("payout_ratio")
-    news_1h = raw.get("news_count_1h")
-    news_24h = raw.get("news_count_24h")
-    
-    # --- Calculate 6 Factor Scores ---
-    moat       = score_moat(market_cap)
-    growth     = score_growth(eps_growth_rate)
-    balance    = score_balance(debt_to_equity, shareholders_equity)
-    
-    # Graham valuation
-    graham_value = calculate_graham(eps_current, eps_growth_rate)
+
+    # Calculate 6 Factor Scores
+    moat = calculate_moat_score(market_cap, analyst_rating)
+    growth = calculate_growth_score(eps_growth_rate, obv_trend, obv_divergence)
+    balance = score_balance(debt_to_equity, shareholders_equity)
+
+    # Graham valuation (bond-adjusted)
+    graham_value = calculate_graham_adjusted(eps_current, eps_growth_rate)
     upside_pct = calculate_upside(graham_value, price)
-    valuation  = score_valuation(upside_pct)
-    
-    sentiment  = score_sentiment(news_1h, news_24h)
-    dividends  = score_dividends(dividend_yield, payout_ratio)
-    
-    # --- Calculate Composites ---
+    valuation = score_valuation(upside_pct)
+
+    sentiment = calculate_sentiment_score(analyst_rating, short_interest_pct)
+    dividends = score_dividends(dividend_yield, payout_ratio)
+
+    # Calculate Composites
     mfses_short = composite_short(moat, growth, balance, valuation, sentiment, dividends)
     mfses_mid   = composite_mid(moat, growth, balance, valuation, sentiment, dividends)
     mfses_long  = composite_long(moat, growth, balance, valuation, sentiment, dividends)
-    
+
     return {
         "ticker":            ticker,
         "moat_score":        moat,
@@ -402,53 +483,40 @@ def init_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
-def run_scorer(tickers: list[str]) -> dict:
+def run_scorer(tickers: list[str] = None) -> dict:
     """
-    Main entry point. Called by n8n after collector.py.
-    
-    Reads raw data for given tickers from Supabase.
-    Scores each stock using MFSES formulas.
-    Writes scores to stock_scores table.
-    Optionally snapshots to score_history (once per day).
-    
-    Args:
-        tickers: List of ticker symbols to score.
-    
-    Returns:
-        {
-            "scored": 47,
-            "failed": 0,
-            "avg_short": 13.2,
-            "avg_mid": 12.8,
-            "avg_long": 13.5,
-            "triple_crowns": 3,
-            "errors": []
-        }
+    Main entry point. Scores stocks from Supabase.
+    If tickers is None, scores ALL stocks with data.
     """
-    if not tickers:
-        return {"scored": 0, "failed": 0, "errors": []}
-    
     supabase = init_supabase()
-    
-    # Fetch raw data for all tickers
-    # Supabase .in_() has a limit, so batch if needed
-    all_raw = []
-    batch_size = 200
-    for i in range(0, len(tickers), batch_size):
-        batch = tickers[i:i + batch_size]
+
+    # Fetch raw data
+    if tickers:
+        all_raw = []
+        batch_size = 200
+        for i in range(0, len(tickers), batch_size):
+            batch = tickers[i:i + batch_size]
+            result = supabase.table("stock_raw_data") \
+                .select("*") \
+                .in_("ticker", batch) \
+                .execute()
+            all_raw.extend(result.data or [])
+    else:
+        # Get all stocks with price data
         result = supabase.table("stock_raw_data") \
             .select("*") \
-            .in_("ticker", batch) \
+            .not_.is_("price", "null") \
+            .limit(3000) \
             .execute()
-        all_raw.extend(result.data or [])
-    
-    print(f"🧮 Scoring {len(all_raw)} stocks...")
-    
+        all_raw = result.data or []
+
+    print(f"🧮 Scoring {len(all_raw)} stocks with MFSES v2...")
+
     scored = 0
     failed = 0
     errors = []
     all_scores = []
-    
+
     for raw in all_raw:
         try:
             scores = score_stock(raw)
@@ -458,10 +526,9 @@ def run_scorer(tickers: list[str]) -> dict:
             failed += 1
             errors.append(f"{raw.get('ticker', '?')}: {str(e)[:100]}")
             print(f"  ❌ Scoring failed for {raw.get('ticker', '?')}: {e}")
-    
-    # Batch upsert scores to Supabase
+
+    # Batch upsert
     if all_scores:
-        # Batch in groups of 100 for Supabase
         for i in range(0, len(all_scores), 100):
             batch = all_scores[i:i + 100]
             try:
@@ -470,7 +537,6 @@ def run_scorer(tickers: list[str]) -> dict:
                     .execute()
             except Exception as e:
                 print(f"  ❌ Batch upsert failed: {e}")
-                # Fallback: try one at a time
                 for s in batch:
                     try:
                         supabase.table("stock_scores") \
@@ -479,20 +545,20 @@ def run_scorer(tickers: list[str]) -> dict:
                     except Exception as e2:
                         failed += 1
                         scored -= 1
-                        errors.append(f"{s['ticker']}: DB write failed - {str(e2)[:50]}")
-    
-    # Calculate summary stats
+                        errors.append(f"{s['ticker']}: DB write failed")
+
+    # Summary stats
     shorts = [s["mfses_short"] for s in all_scores if s.get("mfses_short")]
     mids = [s["mfses_mid"] for s in all_scores if s.get("mfses_mid")]
     longs = [s["mfses_long"] for s in all_scores if s.get("mfses_long")]
-    
+
     triple_crowns = sum(
         1 for s in all_scores
         if s.get("mfses_short", 0) >= 14
         and s.get("mfses_mid", 0) >= 14
         and s.get("mfses_long", 0) >= 14
     )
-    
+
     result = {
         "scored": scored,
         "failed": failed,
@@ -502,9 +568,9 @@ def run_scorer(tickers: list[str]) -> dict:
         "triple_crowns": triple_crowns,
         "errors": errors[:20],
     }
-    
+
     print(f"\n{'='*60}")
-    print(f"Scoring complete:")
+    print(f"Scoring complete (MFSES v2):")
     print(f"  ✅ Scored: {scored}")
     print(f"  ❌ Failed: {failed}")
     print(f"  📊 Avg Short: {result['avg_short']}")
@@ -512,160 +578,83 @@ def run_scorer(tickers: list[str]) -> dict:
     print(f"  📊 Avg Long:  {result['avg_long']}")
     print(f"  👑 Triple Crowns: {triple_crowns}")
     print(f"{'='*60}")
-    
+
     return result
 
 
-def snapshot_daily_scores(tickers: list[str] = None):
-    """
-    Save a daily snapshot of scores to score_history table.
-    Call this once per day (e.g., at market close 4PM ET).
-    Used for trend analysis ("AAPL was 14.2 last week, now 16.1").
-    """
-    supabase = init_supabase()
-    
-    query = supabase.table("stock_scores") \
-        .select("ticker, moat_score, growth_score, balance_score, valuation_score, "
-                "sentiment_score, dividend_score, total_score, mfses_short, mfses_mid, "
-                "mfses_long, graham_upside_pct")
-    
-    if tickers:
-        # Only snapshot specific tickers
-        for i in range(0, len(tickers), 200):
-            batch = tickers[i:i + 200]
-            result = query.in_("ticker", batch).execute()
-            _write_history(supabase, result.data)
-    else:
-        # Snapshot all
-        result = query.execute()
-        _write_history(supabase, result.data)
-
-
-def _write_history(supabase: Client, scores: list[dict]):
-    """Write score snapshots to score_history table."""
-    if not scores:
-        return
-    
-    # Get current prices
-    tickers = [s["ticker"] for s in scores]
-    prices = {}
-    for i in range(0, len(tickers), 200):
-        batch = tickers[i:i + 200]
-        result = supabase.table("stock_raw_data") \
-            .select("ticker, price") \
-            .in_("ticker", batch) \
-            .execute()
-        for r in (result.data or []):
-            prices[r["ticker"]] = r.get("price")
-    
-    now = datetime.now(timezone.utc).isoformat()
-    history_records = []
-    
-    for s in scores:
-        record = {
-            "ticker": s["ticker"],
-            "recorded_at": now,
-            "moat_score": s.get("moat_score"),
-            "growth_score": s.get("growth_score"),
-            "balance_score": s.get("balance_score"),
-            "valuation_score": s.get("valuation_score"),
-            "sentiment_score": s.get("sentiment_score"),
-            "dividend_score": s.get("dividend_score"),
-            "total_score": s.get("total_score"),
-            "mfses_short": s.get("mfses_short"),
-            "mfses_mid": s.get("mfses_mid"),
-            "mfses_long": s.get("mfses_long"),
-            "graham_upside_pct": s.get("graham_upside_pct"),
-            "price": prices.get(s["ticker"]),
-        }
-        history_records.append(record)
-    
-    # Batch insert
-    for i in range(0, len(history_records), 100):
-        batch = history_records[i:i + 100]
-        try:
-            supabase.table("score_history").insert(batch).execute()
-        except Exception as e:
-            print(f"  ⚠️  History snapshot batch failed: {e}")
-
-
 # ============================================================
-# STANDALONE EXECUTION (for testing)
+# STANDALONE TEST
 # ============================================================
 
 if __name__ == "__main__":
     import sys
-    
-    # Test with sample data (no DB needed)
+
     if "--test" in sys.argv:
-        print("Running formula tests...\n")
-        
-        # AAPL example from our docs
-        test_raw = {
-            "ticker": "AAPL",
-            "market_cap": 3_800_000_000_000,
-            "eps_current": 6.57,
-            "eps_growth_rate": 10.0,
-            "debt_to_equity": 1.84,
-            "shareholders_equity": 62_146_000_000,
-            "price": 248.35,
-            "dividend_yield": 0.44,
-            "payout_ratio": 15.2,
-            "news_count_1h": 2,
-            "news_count_24h": 15,
-        }
-        
-        scores = score_stock(test_raw)
-        
-        print(f"{'='*50}")
-        print(f"AAPL Score Breakdown:")
-        print(f"{'='*50}")
-        print(f"  🏰 Moat:       {scores['moat_score']}/20  (market cap: $3.8T)")
-        print(f"  📈 Growth:     {scores['growth_score']}/20  (EPS growth: 10%)")
-        print(f"  ⚖️  Balance:    {scores['balance_score']}/20  (D/E: 1.84)")
-        print(f"  💎 Valuation:  {scores['valuation_score']}/20  (Graham: ${scores['graham_value']}, Upside: {scores['graham_upside_pct']}%)")
-        print(f"  🧠 Sentiment:  {scores['sentiment_score']}/20  (placeholder)")
-        print(f"  💰 Dividends:  {scores['dividend_score']}/20  (yield: 0.44%, payout: 15.2%)")
-        print(f"  {'─'*46}")
-        print(f"  Total: {scores['moat_score'] + scores['growth_score'] + scores['balance_score'] + scores['valuation_score'] + scores['sentiment_score'] + scores['dividend_score']}/120")
-        print(f"")
-        print(f"  ⏱️  Short-term: {scores['mfses_short']}/20")
-        print(f"  ⏱️  Mid-term:   {scores['mfses_mid']}/20")
-        print(f"  ⏱️  Long-term:  {scores['mfses_long']}/20")
-        print(f"{'='*50}")
-        
-        # Test a few more
-        print(f"\nMore examples:")
-        
-        tests = [
-            {"ticker": "NVDA", "market_cap": 2_900_000_000_000, "eps_current": 2.94,
-             "eps_growth_rate": 66.0, "debt_to_equity": 0.41, "shareholders_equity": 42_000_000_000,
-             "price": 140.0, "dividend_yield": 0.03, "payout_ratio": 1.4},
-            
-            {"ticker": "KO", "market_cap": 270_000_000_000, "eps_current": 2.47,
-             "eps_growth_rate": 8.0, "debt_to_equity": 1.72, "shareholders_equity": 25_000_000_000,
-             "price": 62.0, "dividend_yield": 3.1, "payout_ratio": 75.0},
-            
-            {"ticker": "SMCI", "market_cap": 15_000_000_000, "eps_current": 1.80,
-             "eps_growth_rate": 120.0, "debt_to_equity": 0.35, "shareholders_equity": 3_500_000_000,
-             "price": 30.0, "dividend_yield": 0.0, "payout_ratio": 0.0},
+        print("Running MFSES v2 formula tests...\n")
+
+        # Test with various scenarios
+        test_cases = [
+            {
+                "ticker": "MEGA_GROWTH",
+                "market_cap": 500_000_000_000,
+                "analyst_rating": 4.5,
+                "eps_current": 5.0,
+                "eps_growth_rate": 80,
+                "obv_trend": 30,
+                "obv_price_divergence": 10,
+                "debt_to_equity": 0.3,
+                "shareholders_equity": 50_000_000_000,
+                "price": 100,
+                "short_interest_pct": 2,
+                "dividend_yield": 1.0,
+                "payout_ratio": 20,
+            },
+            {
+                "ticker": "VALUE_PLAY",
+                "market_cap": 10_000_000_000,
+                "analyst_rating": 3.5,
+                "eps_current": 8.0,
+                "eps_growth_rate": 10,
+                "obv_trend": 5,
+                "obv_price_divergence": 0,
+                "debt_to_equity": 0.5,
+                "shareholders_equity": 5_000_000_000,
+                "price": 50,
+                "short_interest_pct": 5,
+                "dividend_yield": 3.5,
+                "payout_ratio": 45,
+            },
+            {
+                "ticker": "STRUGGLING",
+                "market_cap": 2_000_000_000,
+                "analyst_rating": 2.0,
+                "eps_current": 1.0,
+                "eps_growth_rate": -20,
+                "obv_trend": -30,
+                "obv_price_divergence": -15,
+                "debt_to_equity": 2.5,
+                "shareholders_equity": 500_000_000,
+                "price": 25,
+                "short_interest_pct": 15,
+                "dividend_yield": 0,
+                "payout_ratio": 0,
+            },
         ]
-        
-        for t in tests:
-            s = score_stock(t)
+
+        print(f"{'Ticker':<15} {'Moat':>5} {'Grw':>5} {'Bal':>5} {'Val':>5} {'Sen':>5} {'Div':>5} │ {'Short':>6} {'Mid':>6} {'Long':>6}")
+        print("─" * 85)
+
+        for tc in test_cases:
+            s = score_stock(tc)
             total = s["moat_score"] + s["growth_score"] + s["balance_score"] + s["valuation_score"] + s["sentiment_score"] + s["dividend_score"]
-            print(f"  {t['ticker']:5s} | Moat:{s['moat_score']:2d} Grw:{s['growth_score']:2d} Bal:{s['balance_score']:2d} Val:{s['valuation_score']:2d} Sen:{s['sentiment_score']:2d} Div:{s['dividend_score']:2d} | Total:{total:3d}/120 | Short:{s['mfses_short']:5.2f} Mid:{s['mfses_mid']:5.2f} Long:{s['mfses_long']:5.2f}")
-    
+            print(f"{tc['ticker']:<15} {s['moat_score']:>5} {s['growth_score']:>5} {s['balance_score']:>5} {s['valuation_score']:>5} {s['sentiment_score']:>5} {s['dividend_score']:>5} │ {s['mfses_short']:>6.1f} {s['mfses_mid']:>6.1f} {s['mfses_long']:>6.1f}")
+
+        print("\n✅ Test complete")
+
     else:
-        # Run against Supabase
-        test_tickers = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"]
-        if len(sys.argv) > 1 and sys.argv[1] != "--test":
-            test_tickers = [t for t in sys.argv[1:] if t != "--test"]
-        
         print(f"{'='*60}")
-        print(f"SeeSaw MFSES — Scorer")
-        print(f"Tickers: {test_tickers}")
+        print(f"SeeSaw MFSES — Scorer v2")
         print(f"{'='*60}")
-        
-        result = run_scorer(test_tickers)
+
+        result = run_scorer()
         print(f"\nResult: {json.dumps(result, indent=2)}")
