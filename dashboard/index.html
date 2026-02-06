@@ -221,14 +221,15 @@
         .tw {
             overflow-x: auto;
             padding: 0 16px 100px;
-            margin-top: 0
+            margin: 0
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            position: relative
+            position: relative;
+            margin: 0
         }
 
         thead {
@@ -236,7 +237,13 @@
             top: 144px;
             z-index: 90;
             background: var(--surface2);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05)
+            margin: 0;
+            padding: 0
+        }
+
+        thead tr {
+            margin: 0;
+            padding: 0
         }
 
         th {
@@ -251,7 +258,8 @@
             border-bottom: 2px solid var(--border);
             cursor: pointer;
             white-space: nowrap;
-            user-select: none
+            user-select: none;
+            margin: 0
         }
 
         th:hover {
@@ -748,17 +756,29 @@
             const thead = document.querySelector('thead');
 
             if (header && toolbar && sbar && thead) {
-                const headerH = header.offsetHeight;
-                const toolbarH = toolbar.offsetHeight;
-                const sbarH = sbar.offsetHeight;
+                // Get actual rendered heights including borders
+                const headerRect = header.getBoundingClientRect();
+                const toolbarRect = toolbar.getBoundingClientRect();
+                const sbarRect = sbar.getBoundingClientRect();
+
+                const headerH = headerRect.height;
+                const toolbarH = toolbarRect.height;
+                const sbarH = sbarRect.height;
 
                 toolbar.style.top = `${headerH}px`;
                 sbar.style.top = `${headerH + toolbarH}px`;
                 thead.style.top = `${headerH + toolbarH + sbarH}px`;
+
+                console.log('Sticky positions:', {headerH, toolbarH, sbarH, theadTop: headerH + toolbarH + sbarH});
             }
         }
 
-        window.addEventListener('load', fixStickyHeaders);
+        // Run multiple times to ensure all elements are rendered
+        window.addEventListener('load', () => {
+            fixStickyHeaders();
+            setTimeout(fixStickyHeaders, 100);
+            setTimeout(fixStickyHeaders, 500);
+        });
         window.addEventListener('resize', fixStickyHeaders);
 
         load();
