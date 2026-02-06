@@ -494,6 +494,17 @@
     </div>
     <div class="toolbar">
         <input type="text" class="sbox" id="q" placeholder="Search ticker or company...">
+        <div style="display:flex;align-items:center;gap:18px;margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
+            <div class="st">Stocks: <span class="sv" id="sT">—</span></div>
+            <div class="st">Showing: <span class="sv" id="sS">—</span></div>
+            <div class="st">🔥<span class="sv" style="color:var(--red)" id="sH">—</span></div>
+            <div class="st">🌡️<span class="sv" style="color:var(--orange)" id="sW">—</span></div>
+            <div class="st">❄️<span class="sv" style="color:var(--blue)" id="sC">—</span></div>
+            <div class="st">🧊<span class="sv" style="color:var(--text-faint)" id="sF">—</span></div>
+            <div class="st">👑<span class="sv" id="sK">—</span></div>
+        </div>
+    </div>
+    <div class="sbar" id="sb">
         <div class="tg"><span class="tl">Sector</span><select class="fsel" id="fSec">
                 <option value="">All</option>
                 <option>Technology</option>
@@ -534,17 +545,6 @@
                 <option value="v">⚠️ Value Trap</option>
                 <option value="e">🚀 Expensive Growth</option>
             </select></div>
-        <div style="display:flex;align-items:center;gap:18px;margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
-            <div class="st">Stocks: <span class="sv" id="sT">—</span></div>
-            <div class="st">Showing: <span class="sv" id="sS">—</span></div>
-            <div class="st">🔥<span class="sv" style="color:var(--red)" id="sH">—</span></div>
-            <div class="st">🌡️<span class="sv" style="color:var(--orange)" id="sW">—</span></div>
-            <div class="st">❄️<span class="sv" style="color:var(--blue)" id="sC">—</span></div>
-            <div class="st">🧊<span class="sv" style="color:var(--text-faint)" id="sF">—</span></div>
-            <div class="st">👑<span class="sv" id="sK">—</span></div>
-        </div>
-    </div>
-    <div class="sbar" id="sb">
         <div class="tg"><span class="tl">Sort</span><select class="fsel" id="srt">
                 <option value="mfses_short-d">Short ↓</option>
                 <option value="mfses_mid-d">Mid ↓</option>
@@ -557,9 +557,9 @@
                 <option value="volume_ratio-d">VolR ↓</option>
                 <option value="ticker-a">A→Z</option>
             </select></div>
-        <div class="tg" style="flex:1;min-width:200px"><span class="tl">MCap</span>
+        <div class="tg" style="min-width:120px;max-width:180px"><span class="tl">MCap</span>
             <span class="sv" id="mcL" style="font-size:10px;color:var(--text-faint);min-width:35px">All</span>
-            <input type="range" id="mcSlider" min="0" max="5" value="0" class="mcap-slider">
+            <input type="range" id="mcSlider" min="0" max="5" value="0" class="mcap-slider" style="width:60px">
             <span class="sv" id="mcV" style="font-size:10px;color:var(--text-faint)">∞</span>
         </div>
     </div>
