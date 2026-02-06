@@ -219,30 +219,21 @@
 
         .tw {
             overflow-x: auto;
-            padding: 0 16px 100px
+            padding: 0 16px 100px;
+            margin-top: 0
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px
+            font-size: 13px;
+            position: relative
         }
 
         thead {
             position: sticky;
-            top: 162px;
-            z-index: 90;
-            background: var(--bg)
-        }
-
-        thead::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 2px;
-            background: var(--border)
+            top: 144px;
+            z-index: 90
         }
 
         th {
@@ -257,9 +248,7 @@
             border-bottom: 2px solid var(--border);
             cursor: pointer;
             white-space: nowrap;
-            user-select: none;
-            position: relative;
-            z-index: 1
+            user-select: none
         }
 
         th:hover {
