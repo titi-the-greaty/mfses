@@ -136,7 +136,10 @@
             flex-wrap: wrap;
             gap: 10px;
             border-bottom: 1px solid var(--border);
-            background: var(--surface)
+            background: var(--surface);
+            position: sticky;
+            top: 52px;
+            z-index: 99
         }
 
         .sbox {
@@ -197,7 +200,10 @@
             font-size: 11px;
             color: var(--text-dim);
             border-bottom: 1px solid var(--border);
-            background: var(--surface)
+            background: var(--surface);
+            position: sticky;
+            top: 112px;
+            z-index: 98
         }
 
         .st {
@@ -224,8 +230,19 @@
 
         thead {
             position: sticky;
-            top: 52px;
-            z-index: 50
+            top: 162px;
+            z-index: 90;
+            background: var(--bg)
+        }
+
+        thead::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 2px;
+            background: var(--border)
         }
 
         th {
@@ -240,7 +257,9 @@
             border-bottom: 2px solid var(--border);
             cursor: pointer;
             white-space: nowrap;
-            user-select: none
+            user-select: none;
+            position: relative;
+            z-index: 1
         }
 
         th:hover {
