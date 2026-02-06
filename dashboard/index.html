@@ -1,147 +1,681 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SeeSaw MFSES Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0a0c10;--surface:#12151c;--surface2:#1a1e28;--border:#232938;--text:#e2e8f0;--text-dim:#8892a8;--text-faint:#4a5568;--accent:#22d3ee;--accent2:#a78bfa;--green:#34d399;--orange:#fb923c;--red:#f87171;--yellow:#fbbf24;--blue:#60a5fa;--pink:#f472b6;--mono:'JetBrains Mono',monospace;--font:'Outfit',sans-serif;--radius:10px}
-[data-theme=light]{--bg:#f5f6fa;--surface:#fff;--surface2:#f0f1f5;--border:#e2e5ee;--text:#1a1e2e;--text-dim:#5a6178;--text-faint:#9ca3b8;--accent:#0891b2;--accent2:#7c3aed;--green:#059669;--orange:#ea580c;--red:#dc2626;--yellow:#d97706;--blue:#2563eb;--pink:#db2777}
-*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.5}input,select,button{font-family:var(--font)}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{font-size:22px;font-weight:800;letter-spacing:-1px}.logo span:first-child{color:var(--accent)}.logo span:last-child{color:var(--accent2)}
-.header-r{display:flex;align-items:center;gap:12px}
-.hbadge{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:20px;background:rgba(52,211,153,.12);color:var(--green)}
-.tbtn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--text-dim);font-size:14px}.tbtn:hover{border-color:var(--accent);color:var(--accent)}
-.toolbar{padding:14px 24px;display:flex;flex-wrap:wrap;gap:10px;border-bottom:1px solid var(--border);background:var(--surface)}
-.sbox{flex:1;min-width:180px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;outline:none}.sbox:focus{border-color:var(--accent)}.sbox::placeholder{color:var(--text-faint)}
-.fsel{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;cursor:pointer;outline:none}.fsel:focus{border-color:var(--accent)}
-.tg{display:flex;align-items:center;gap:5px}.tl{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)}
-.sbar{padding:8px 24px;display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--text-dim);border-bottom:1px solid var(--border);background:var(--surface)}
-.st{display:flex;align-items:center;gap:4px}.sv{font-weight:700;color:var(--text)}
-.tw{overflow-x:auto;padding:0 16px 100px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead{position:sticky;top:52px;z-index:50}
-th{background:var(--surface2);padding:9px 8px;text-align:left;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);border-bottom:2px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none}
-th:hover{color:var(--accent)}th.sd{color:var(--accent)}th.sd::after{content:' ▼';font-size:8px}th.sd.asc::after{content:' ▲'}
-tbody tr{border-bottom:1px solid var(--border);transition:background .1s}tbody tr:hover{background:var(--surface2)}td{padding:8px 8px;white-space:nowrap}
-.tk{font-weight:700;font-size:14px}.tn{color:var(--text-dim);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis}
-.sb{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:12px;font-weight:600}
-.sf{height:5px;border-radius:3px;min-width:3px}
-.cp{font-family:var(--mono);font-weight:700;font-size:13px}
-.mb{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:12px;font-weight:600}
-.mh{background:rgba(248,113,113,.12);color:var(--red)}.mw{background:rgba(251,146,60,.12);color:var(--orange)}.mc{background:rgba(96,165,250,.12);color:var(--blue)}.mf{background:rgba(74,85,104,.2);color:var(--text-faint)}
-.up{color:var(--green);font-weight:700}.dn{color:var(--red);font-weight:700}.nu{color:var(--text-dim)}
-.fl{font-size:11px;margin-right:1px}
-.dr td{padding:0!important}.dc{padding:16px 24px;background:var(--bg);border-bottom:2px solid var(--border);display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-.dg h4{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:5px}
-.di{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)}.dl{color:var(--text-dim)}.dv{font-family:var(--mono);font-weight:600}
-.ld{text-align:center;padding:80px 24px;color:var(--text-dim)}.sp{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}@keyframes spin{to{transform:rotate(360deg)}}
-.em{text-align:center;padding:80px 24px;color:var(--text-dim)}
-@media(max-width:768px){.header{padding:10px 14px}.toolbar{padding:10px 14px}.sbar{padding:6px 14px;font-size:10px}.tw{padding:0 6px 80px}th,td{padding:6px 5px;font-size:11px}.dc{grid-template-columns:1fr 1fr}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeeSaw MFSES Dashboard</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --surface: #12151c;
+            --surface2: #1a1e28;
+            --border: #232938;
+            --text: #e2e8f0;
+            --text-dim: #8892a8;
+            --text-faint: #4a5568;
+            --accent: #22d3ee;
+            --accent2: #a78bfa;
+            --green: #34d399;
+            --orange: #fb923c;
+            --red: #f87171;
+            --yellow: #fbbf24;
+            --blue: #60a5fa;
+            --pink: #f472b6;
+            --mono: 'JetBrains Mono', monospace;
+            --font: 'Outfit', sans-serif;
+            --radius: 10px
+        }
+
+        [data-theme=light] {
+            --bg: #f5f6fa;
+            --surface: #fff;
+            --surface2: #f0f1f5;
+            --border: #e2e5ee;
+            --text: #1a1e2e;
+            --text-dim: #5a6178;
+            --text-faint: #9ca3b8;
+            --accent: #0891b2;
+            --accent2: #7c3aed;
+            --green: #059669;
+            --orange: #ea580c;
+            --red: #dc2626;
+            --yellow: #d97706;
+            --blue: #2563eb;
+            --pink: #db2777
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            line-height: 1.5
+        }
+
+        input,
+        select,
+        button {
+            font-family: var(--font)
+        }
+
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: baseline;
+            gap: 0
+        }
+
+        .logo span {
+            display: inline
+        }
+
+        .logo span:first-child {
+            color: var(--accent)
+        }
+
+        .logo span:nth-child(2) {
+            color: var(--accent2)
+        }
+
+        .header-r {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .hbadge {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(52, 211, 153, .12);
+            color: var(--green)
+        }
+
+        .tbtn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 14px
+        }
+
+        .tbtn:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .toolbar {
+            padding: 14px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface)
+        }
+
+        .sbox {
+            flex: 1;
+            min-width: 180px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            outline: none
+        }
+
+        .sbox:focus {
+            border-color: var(--accent)
+        }
+
+        .sbox::placeholder {
+            color: var(--text-faint)
+        }
+
+        .fsel {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 12px;
+            cursor: pointer;
+            outline: none
+        }
+
+        .fsel:focus {
+            border-color: var(--accent)
+        }
+
+        .tg {
+            display: flex;
+            align-items: center;
+            gap: 5px
+        }
+
+        .tl {
+            font-size: 10px;
+            color: var(--text-faint);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: var(--mono)
+        }
+
+        .sbar {
+            padding: 8px 24px;
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            background: var(--surface)
+        }
+
+        .st {
+            display: flex;
+            align-items: center;
+            gap: 4px
+        }
+
+        .sv {
+            font-weight: 700;
+            color: var(--text)
+        }
+
+        .tw {
+            overflow-x: auto;
+            padding: 0 16px 100px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        thead {
+            position: sticky;
+            top: 52px;
+            z-index: 50
+        }
+
+        th {
+            background: var(--surface2);
+            padding: 9px 8px;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-dim);
+            border-bottom: 2px solid var(--border);
+            cursor: pointer;
+            white-space: nowrap;
+            user-select: none
+        }
+
+        th:hover {
+            color: var(--accent)
+        }
+
+        th.sd {
+            color: var(--accent)
+        }
+
+        th.sd::after {
+            content: ' ▼';
+            font-size: 8px
+        }
+
+        th.sd.asc::after {
+            content: ' ▲'
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .1s
+        }
+
+        tbody tr:hover {
+            background: var(--surface2)
+        }
+
+        td {
+            padding: 8px 8px;
+            white-space: nowrap
+        }
+
+        .tk {
+            font-weight: 700;
+            font-size: 14px
+        }
+
+        .tn {
+            color: var(--text-dim);
+            font-size: 11px;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .sb {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600
+        }
+
+        .sf {
+            height: 5px;
+            border-radius: 3px;
+            min-width: 3px
+        }
+
+        .cp {
+            font-family: var(--mono);
+            font-weight: 700;
+            font-size: 13px
+        }
+
+        .mb {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-weight: 600
+        }
+
+        .mh {
+            background: rgba(248, 113, 113, .12);
+            color: var(--red)
+        }
+
+        .mw {
+            background: rgba(251, 146, 60, .12);
+            color: var(--orange)
+        }
+
+        .mc {
+            background: rgba(96, 165, 250, .12);
+            color: var(--blue)
+        }
+
+        .mf {
+            background: rgba(74, 85, 104, .2);
+            color: var(--text-faint)
+        }
+
+        .up {
+            color: var(--green);
+            font-weight: 700
+        }
+
+        .dn {
+            color: var(--red);
+            font-weight: 700
+        }
+
+        .nu {
+            color: var(--text-dim)
+        }
+
+        .fl {
+            font-size: 11px;
+            margin-right: 1px
+        }
+
+        .dr td {
+            padding: 0 !important
+        }
+
+        .dc {
+            padding: 16px 24px;
+            background: var(--bg);
+            border-bottom: 2px solid var(--border);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px
+        }
+
+        .dg h4 {
+            font-size: 10px;
+            color: var(--text-faint);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: var(--mono);
+            margin-bottom: 5px
+        }
+
+        .di {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 3px 0;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .dl {
+            color: var(--text-dim)
+        }
+
+        .dv {
+            font-family: var(--mono);
+            font-weight: 600
+        }
+
+        .ld {
+            text-align: center;
+            padding: 80px 24px;
+            color: var(--text-dim)
+        }
+
+        .sp {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+            margin: 0 auto 16px
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .em {
+            text-align: center;
+            padding: 80px 24px;
+            color: var(--text-dim)
+        }
+
+        .mcap-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer
+        }
+
+        .mcap-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid var(--surface)
+        }
+
+        .mcap-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid var(--surface)
+        }
+
+        @media(max-width:768px) {
+            .header {
+                padding: 10px 14px
+            }
+
+            .toolbar {
+                padding: 10px 14px
+            }
+
+            .sbar {
+                padding: 6px 14px;
+                font-size: 10px
+            }
+
+            .tw {
+                padding: 0 6px 80px
+            }
+
+            th,
+            td {
+                padding: 6px 5px;
+                font-size: 11px
+            }
+
+            .dc {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+    </style>
 </head>
+
 <body data-theme="dark">
-<div class="header"><div class="logo"><span>SEE</span><span>SAW</span> <span style="font-weight:300;font-size:14px;color:var(--text-dim)">MFSES</span></div><div class="header-r"><div class="hbadge" id="hb">● Loading...</div><button class="tbtn" onclick="toggleTheme()">◐</button></div></div>
-<div class="toolbar">
-<input type="text" class="sbox" id="q" placeholder="Search ticker or company...">
-<div class="tg"><span class="tl">Sector</span><select class="fsel" id="fSec"><option value="">All</option><option>Technology</option><option>Healthcare</option><option>Financials</option><option>Consumer</option><option>Consumer Staples</option><option>Energy</option><option>Industrials</option><option>Utilities</option><option>Communication</option><option>Real Estate</option><option>Materials</option></select></div>
-<div class="tg"><span class="tl">Tier</span><select class="fsel" id="fTier"><option value="">All</option><option value="1">Mega</option><option value="2">Large</option><option value="3">Mid</option><option value="4">Small</option></select></div>
-<div class="tg"><span class="tl">State</span><select class="fsel" id="fSt"><option value="">All</option><option value="HOT">🔥 HOT</option><option value="WARM">🌡️ WARM</option><option value="COLD">❄️ COLD</option><option value="FROZEN">🧊 FROZEN</option></select></div>
-<div class="tg"><span class="tl">Value</span><select class="fsel" id="fVal"><option value="">All</option><option value="u">Under (>20%↑)</option><option value="f">Fair (±10%)</option><option value="o">Over (>20%↓)</option></select></div>
-<div class="tg"><span class="tl">Flags</span><select class="fsel" id="fFlg"><option value="">All</option><option value="t">👑 Triple Crown</option><option value="v">⚠️ Value Trap</option><option value="e">🚀 Expensive Growth</option></select></div>
-<div class="tg"><span class="tl">Sort</span><select class="fsel" id="srt"><option value="mfses_short-d">Short ↓</option><option value="mfses_mid-d">Mid ↓</option><option value="mfses_long-d">Long ↓</option><option value="total_score-d">Total ↓</option><option value="graham_upside_pct-d">Upside ↓</option><option value="dividend_yield-d">Yield ↓</option><option value="market_cap-d">MCap ↓</option><option value="price_change_pct-d">Chg% ↓</option><option value="volume_ratio-d">VolR ↓</option><option value="ticker-a">A→Z</option></select></div>
-</div>
-<div class="sbar" id="sb">
-<div class="st">Stocks: <span class="sv" id="sT">—</span></div>
-<div class="st">Showing: <span class="sv" id="sS">—</span></div>
-<div class="st">🔥<span class="sv" style="color:var(--red)" id="sH">—</span></div>
-<div class="st">🌡️<span class="sv" style="color:var(--orange)" id="sW">—</span></div>
-<div class="st">❄️<span class="sv" style="color:var(--blue)" id="sC">—</span></div>
-<div class="st">🧊<span class="sv" style="color:var(--text-faint)" id="sF">—</span></div>
-<div class="st">👑<span class="sv" id="sK">—</span></div>
-</div>
-<div class="tw">
-<div class="ld" id="ldg"><div class="sp"></div><div>Loading stocks from Supabase...</div></div>
-<table id="tbl" style="display:none"><thead><tr>
-<th data-c="ticker">Ticker</th><th data-c="price">Price</th><th data-c="price_change_pct">Chg%</th><th data-c="markov_state">State</th>
-<th data-c="moat_score">Moat</th><th data-c="growth_score">Grw</th><th data-c="balance_score">Bal</th><th data-c="valuation_score">Val</th><th data-c="sentiment_score">Sen</th><th data-c="dividend_score">Div</th>
-<th data-c="total_score">Tot</th><th data-c="mfses_short">Short</th><th data-c="mfses_mid">Mid</th><th data-c="mfses_long">Long</th><th data-c="graham_upside_pct">Upside</th><th data-c="dividend_yield">Yield</th>
-</tr></thead><tbody id="tb"></tbody></table>
-<div class="em" id="emp" style="display:none">No stocks match your filters.</div>
-</div>
-<script>
-// ============ CONFIG — UPDATE THESE ============
-const SB_URL='https://isnuktzlqeeivhbwykxs.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzbnVrdHpscWVlaXZoYnd5a3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODMwODYsImV4cCI6MjA4NTY1OTA4Nn0.3u6IDfRFChaHyQ3yIharGHaVicNjgJAaPvX-vGr2N3Q';
+    <div class="header">
+        <div class="logo"><span>SEE</span><span>SAW</span><span
+                style="font-weight:300;font-size:14px;color:var(--text-dim);margin-left:8px">MFSES</span></div>
+        <div class="header-r">
+            <div class="hbadge" id="upd" style="background:rgba(34,211,238,.1);color:var(--text-dim)">Updated: —</div>
+            <div class="hbadge" id="hb">● Loading...</div><button class="tbtn" onclick="toggleTheme()">◐</button>
+        </div>
+    </div>
+    <div class="toolbar">
+        <input type="text" class="sbox" id="q" placeholder="Search ticker or company...">
+        <div class="tg"><span class="tl">Sector</span><select class="fsel" id="fSec">
+                <option value="">All</option>
+                <option>Technology</option>
+                <option>Healthcare</option>
+                <option>Financials</option>
+                <option>Consumer</option>
+                <option>Consumer Staples</option>
+                <option>Energy</option>
+                <option>Industrials</option>
+                <option>Utilities</option>
+                <option>Communication</option>
+                <option>Real Estate</option>
+                <option>Materials</option>
+            </select></div>
+        <div class="tg"><span class="tl">Tier</span><select class="fsel" id="fTier">
+                <option value="">All</option>
+                <option value="1">Mega</option>
+                <option value="2">Large</option>
+                <option value="3">Mid</option>
+                <option value="4">Small</option>
+            </select></div>
+        <div class="tg"><span class="tl">State</span><select class="fsel" id="fSt">
+                <option value="">All</option>
+                <option value="HOT">🔥 HOT</option>
+                <option value="WARM">🌡️ WARM</option>
+                <option value="COLD">❄️ COLD</option>
+                <option value="FROZEN">🧊 FROZEN</option>
+            </select></div>
+        <div class="tg"><span class="tl">Value</span><select class="fsel" id="fVal">
+                <option value="">All</option>
+                <option value="u">Under (>20%↑)</option>
+                <option value="f">Fair (±10%)</option>
+                <option value="o">Over (>20%↓)</option>
+            </select></div>
+        <div class="tg"><span class="tl">Flags</span><select class="fsel" id="fFlg">
+                <option value="">All</option>
+                <option value="t">👑 Triple Crown</option>
+                <option value="v">⚠️ Value Trap</option>
+                <option value="e">🚀 Expensive Growth</option>
+            </select></div>
+        <div style="display:flex;align-items:center;gap:18px;margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
+            <div class="st">Stocks: <span class="sv" id="sT">—</span></div>
+            <div class="st">Showing: <span class="sv" id="sS">—</span></div>
+            <div class="st">🔥<span class="sv" style="color:var(--red)" id="sH">—</span></div>
+            <div class="st">🌡️<span class="sv" style="color:var(--orange)" id="sW">—</span></div>
+            <div class="st">❄️<span class="sv" style="color:var(--blue)" id="sC">—</span></div>
+            <div class="st">🧊<span class="sv" style="color:var(--text-faint)" id="sF">—</span></div>
+            <div class="st">👑<span class="sv" id="sK">—</span></div>
+        </div>
+    </div>
+    <div class="sbar" id="sb">
+        <div class="tg"><span class="tl">Sort</span><select class="fsel" id="srt">
+                <option value="mfses_short-d">Short ↓</option>
+                <option value="mfses_mid-d">Mid ↓</option>
+                <option value="mfses_long-d">Long ↓</option>
+                <option value="total_score-d">Total ↓</option>
+                <option value="graham_upside_pct-d">Upside ↓</option>
+                <option value="dividend_yield-d">Yield ↓</option>
+                <option value="market_cap-d">MCap ↓</option>
+                <option value="price_change_pct-d">Chg% ↓</option>
+                <option value="volume_ratio-d">VolR ↓</option>
+                <option value="ticker-a">A→Z</option>
+            </select></div>
+        <div class="tg" style="flex:1;min-width:200px"><span class="tl">MCap</span>
+            <span class="sv" id="mcL" style="font-size:10px;color:var(--text-faint);min-width:35px">All</span>
+            <input type="range" id="mcSlider" min="0" max="5" value="0" class="mcap-slider">
+            <span class="sv" id="mcV" style="font-size:10px;color:var(--text-faint)">∞</span>
+        </div>
+    </div>
+    <div class="tw">
+        <div class="ld" id="ldg">
+            <div class="sp"></div>
+            <div>Loading stocks from Supabase...</div>
+        </div>
+        <table id="tbl" style="display:none">
+            <thead>
+                <tr>
+                    <th data-c="ticker">Ticker</th>
+                    <th data-c="price">Price</th>
+                    <th data-c="price_change_pct">Chg%</th>
+                    <th data-c="markov_state">State</th>
+                    <th data-c="moat_score">Moat</th>
+                    <th data-c="growth_score">Grw</th>
+                    <th data-c="balance_score">Bal</th>
+                    <th data-c="valuation_score">Val</th>
+                    <th data-c="sentiment_score">Sen</th>
+                    <th data-c="dividend_score">Div</th>
+                    <th data-c="total_score">Tot</th>
+                    <th data-c="mfses_short">Short</th>
+                    <th data-c="mfses_mid">Mid</th>
+                    <th data-c="mfses_long">Long</th>
+                    <th data-c="graham_upside_pct">Upside</th>
+                    <th data-c="dividend_yield">Yield</th>
+                </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div class="em" id="emp" style="display:none">No stocks match your filters.</div>
+    </div>
+    <script>
+        // ============ CONFIG — UPDATE THESE ============
+        const SB_URL = 'https://isnuktzlqeeivhbwykxs.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzbnVrdHpscWVlaXZoYnd5a3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODMwODYsImV4cCI6MjA4NTY1OTA4Nn0.3u6IDfRFChaHyQ3yIharGHaVicNjgJAaPvX-vGr2N3Q';
 
-let A=[],F=[],S={c:'mfses_short',d:'desc'},EX=null,RC=0,BS=100;
+        let A = [], F = [], S = { c: 'mfses_short', d: 'desc' }, EX = null, RC = 0, BS = 100;
 
-async function load(){try{
-const r=await fetch(`${SB_URL}/rest/v1/dashboard_stocks?select=*&order=mfses_short.desc.nullslast`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Range':'0-2999'}});
-if(!r.ok)throw new Error(`HTTP ${r.status}`);A=await r.json();
-$('ldg').style.display='none';$('tbl').style.display='';stats();af();
-fetch(`${SB_URL}/rest/v1/system_health?select=*`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}}).then(r=>r.json()).then(d=>{if(d&&d[0]){const h=d[0],b=$('hb');b.textContent=`● ${h.last_run_status==='success'?'Healthy':h.last_run_status||'?'}`;b.style.color=h.last_run_status==='success'?'var(--green)':'var(--red)'}}).catch(()=>{});
-}catch(e){$('ldg').innerHTML=`<div style="color:var(--red)">❌ ${e.message}</div><div style="margin-top:8px;font-size:12px;color:var(--text-faint)">Update SB_URL and SB_KEY in index.html</div>`}}
+        async function load() {
+            try {
+                const r = await fetch(`${SB_URL}/rest/v1/dashboard_stocks?select=*&order=mfses_short.desc.nullslast`, { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Range': '0-2999' } });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`); A = await r.json();
+                $('ldg').style.display = 'none'; $('tbl').style.display = ''; stats(); af();
+                fetch(`${SB_URL}/rest/v1/system_health?select=*`, { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } }).then(r => r.json()).then(d => { if (d && d[0]) { const h = d[0], b = $('hb'); b.textContent = `● ${h.last_run_status === 'success' ? 'Healthy' : h.last_run_status || '?'}`; b.style.color = h.last_run_status === 'success' ? 'var(--green)' : 'var(--red)'; if (h.last_run_at) { const dt = new Date(h.last_run_at); $('upd').textContent = `Updated: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` } } }).catch(() => { });
+            } catch (e) { $('ldg').innerHTML = `<div style="color:var(--red)">❌ ${e.message}</div><div style="margin-top:8px;font-size:12px;color:var(--text-faint)">Update SB_URL and SB_KEY in index.html</div>` }
+        }
 
-function af(){
-const q=$('q').value.toLowerCase(),sec=$('fSec').value,tier=$('fTier').value,st=$('fSt').value,vl=$('fVal').value,fl=$('fFlg').value;
-F=A.filter(s=>{
-if(q&&!s.ticker?.toLowerCase().includes(q)&&!s.company_name?.toLowerCase().includes(q))return false;
-if(sec&&s.sector!==sec)return false;if(tier&&s.tier!=tier)return false;if(st&&s.markov_state!==st)return false;
-if(vl==='u'&&(s.graham_upside_pct==null||s.graham_upside_pct<20))return false;
-if(vl==='f'&&(s.graham_upside_pct==null||Math.abs(s.graham_upside_pct)>10))return false;
-if(vl==='o'&&(s.graham_upside_pct==null||s.graham_upside_pct>-20))return false;
-if(fl==='t'&&!s.is_triple_crown)return false;if(fl==='v'&&!s.is_value_trap)return false;if(fl==='e'&&!s.is_expensive_growth)return false;
-return true});ss();RC=0;render();$('sS').textContent=F.length}
+        function af() {
+            const q = $('q').value.toLowerCase(), sec = $('fSec').value, tier = $('fTier').value, st = $('fSt').value, vl = $('fVal').value, fl = $('fFlg').value, mcMin = MC_STEPS[+$('mcSlider').value];
+            F = A.filter(s => {
+                if (q && !s.ticker?.toLowerCase().includes(q) && !s.company_name?.toLowerCase().includes(q)) return false;
+                if (sec && s.sector !== sec) return false; if (tier && s.tier != tier) return false; if (st && s.markov_state !== st) return false;
+                if (mcMin && (+s.market_cap || 0) < mcMin) return false;
+                if (vl === 'u' && (s.graham_upside_pct == null || s.graham_upside_pct < 20)) return false;
+                if (vl === 'f' && (s.graham_upside_pct == null || Math.abs(s.graham_upside_pct) > 10)) return false;
+                if (vl === 'o' && (s.graham_upside_pct == null || s.graham_upside_pct > -20)) return false;
+                if (fl === 't' && !s.is_triple_crown) return false; if (fl === 'v' && !s.is_value_trap) return false; if (fl === 'e' && !s.is_expensive_growth) return false;
+                return true
+            }); ss(); RC = 0; render(); $('sS').textContent = F.length
+        }
 
-function ss(){const{c,d}=S;F.sort((a,b)=>{let x=a[c],y=b[c];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return-1;if(c==='ticker'||c==='markov_state')return d==='asc'?String(x).localeCompare(String(y)):String(y).localeCompare(String(x));x=+x||0;y=+y||0;return d==='asc'?x-y:y-x})}
+        function ss() { const { c, d } = S; F.sort((a, b) => { let x = a[c], y = b[c]; if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; if (c === 'ticker' || c === 'markov_state') return d === 'asc' ? String(x).localeCompare(String(y)) : String(y).localeCompare(String(x)); x = +x || 0; y = +y || 0; return d === 'asc' ? x - y : y - x }) }
 
-function setS(c){if(S.c===c)S.d=S.d==='desc'?'asc':'desc';else{S.c=c;S.d='desc'}document.querySelectorAll('th').forEach(t=>{t.classList.remove('sd','asc');if(t.dataset.c===c){t.classList.add('sd');if(S.d==='asc')t.classList.add('asc')}});ss();RC=0;render()}
+        function setS(c) { if (S.c === c) S.d = S.d === 'desc' ? 'asc' : 'desc'; else { S.c = c; S.d = 'desc' } document.querySelectorAll('th').forEach(t => { t.classList.remove('sd', 'asc'); if (t.dataset.c === c) { t.classList.add('sd'); if (S.d === 'asc') t.classList.add('asc') } }); ss(); RC = 0; render() }
 
-function render(){const tb=$('tb'),em=$('emp');if(!F.length){tb.innerHTML='';em.style.display='';return}em.style.display='none';if(!RC)tb.innerHTML='';const e=Math.min(RC+BS,F.length),fg=document.createDocumentFragment();for(let i=RC;i<e;i++)fg.appendChild(mkr(F[i]));tb.appendChild(fg);RC=e}
+        function render() { const tb = $('tb'), em = $('emp'); if (!F.length) { tb.innerHTML = ''; em.style.display = ''; return } em.style.display = 'none'; if (!RC) tb.innerHTML = ''; const e = Math.min(RC + BS, F.length), fg = document.createDocumentFragment(); for (let i = RC; i < e; i++)fg.appendChild(mkr(F[i])); tb.appendChild(fg); RC = e }
 
-function mkr(s){const tr=document.createElement('tr');tr.onclick=()=>togD(s.ticker,tr);
-const p=s.price?`$${(+s.price).toFixed(2)}`:'—';const ch=s.price_change_pct!=null?(+s.price_change_pct).toFixed(2):'—';const cc=+s.price_change_pct>0?'up':+s.price_change_pct<0?'dn':'';
-const em={HOT:'🔥',WARM:'🌡️',COLD:'❄️',FROZEN:'🧊'},mc={HOT:'mh',WARM:'mw',COLD:'mc',FROZEN:'mf'},ms=s.markov_state||'COLD';
-const us=s.graham_upside_pct!=null?(+s.graham_upside_pct).toFixed(1)+'%':'—',uc=+s.graham_upside_pct>0?'up':+s.graham_upside_pct<0?'dn':'nu';
-const dy=s.dividend_yield?(+s.dividend_yield).toFixed(2)+'%':'—';
-let fl='';if(s.is_triple_crown)fl+='<span class="fl" title="Triple Crown">👑</span>';if(s.is_value_trap)fl+='<span class="fl" title="Value Trap">⚠️</span>';if(s.is_expensive_growth)fl+='<span class="fl" title="Exp Growth">🚀</span>';
-tr.innerHTML=`<td><div class="tk">${fl}${s.ticker}</div><div class="tn">${s.company_name||''}</div></td>
+        function mkr(s) {
+            const tr = document.createElement('tr'); tr.onclick = () => togD(s.ticker, tr);
+            const p = s.price ? `$${(+s.price).toFixed(2)}` : '—'; const ch = s.price_change_pct != null ? (+s.price_change_pct).toFixed(2) : '—'; const cc = +s.price_change_pct > 0 ? 'up' : +s.price_change_pct < 0 ? 'dn' : '';
+            const em = { HOT: '🔥', WARM: '🌡️', COLD: '❄️', FROZEN: '🧊' }, mc = { HOT: 'mh', WARM: 'mw', COLD: 'mc', FROZEN: 'mf' }, ms = s.markov_state || 'COLD';
+            const us = s.graham_upside_pct != null ? (+s.graham_upside_pct).toFixed(1) + '%' : '—', uc = +s.graham_upside_pct > 0 ? 'up' : +s.graham_upside_pct < 0 ? 'dn' : 'nu';
+            const dy = s.dividend_yield ? (+s.dividend_yield).toFixed(2) + '%' : '—';
+            let fl = ''; if (s.is_triple_crown) fl += '<span class="fl" title="Triple Crown">👑</span>'; if (s.is_value_trap) fl += '<span class="fl" title="Value Trap">⚠️</span>'; if (s.is_expensive_growth) fl += '<span class="fl" title="Exp Growth">🚀</span>';
+            tr.innerHTML = `<td><div class="tk">${fl}${s.ticker}</div><div class="tn">${s.company_name || ''}</div></td>
 <td style="font-family:var(--mono);font-size:12px">${p}</td><td class="${cc}" style="font-family:var(--mono);font-size:12px">${ch}%</td>
 <td><span class="mb ${mc[ms]}">${em[ms]} ${ms}</span></td>
-<td>${sc(s.moat_score,'--accent')}</td><td>${sc(s.growth_score,'--accent2')}</td><td>${sc(s.balance_score,'--green')}</td><td>${sc(s.valuation_score,'--orange')}</td><td>${sc(s.sentiment_score,'--pink')}</td><td>${sc(s.dividend_score,'--yellow')}</td>
-<td><span class="cp" style="color:${tc(s.total_score)}">${s.total_score??'—'}</span></td>
-<td><span class="cp" style="color:${cc2(s.mfses_short)}">${s.mfses_short!=null?(+s.mfses_short).toFixed(1):'—'}</span></td>
-<td><span class="cp" style="color:${cc2(s.mfses_mid)}">${s.mfses_mid!=null?(+s.mfses_mid).toFixed(1):'—'}</span></td>
-<td><span class="cp" style="color:${cc2(s.mfses_long)}">${s.mfses_long!=null?(+s.mfses_long).toFixed(1):'—'}</span></td>
-<td class="${uc}" style="font-family:var(--mono);font-size:12px">${us}</td><td style="font-family:var(--mono);font-size:12px">${dy}</td>`;return tr}
+<td>${sc(s.moat_score, '--accent')}</td><td>${sc(s.growth_score, '--accent2')}</td><td>${sc(s.balance_score, '--green')}</td><td>${sc(s.valuation_score, '--orange')}</td><td>${sc(s.sentiment_score, '--pink')}</td><td>${sc(s.dividend_score, '--yellow')}</td>
+<td><span class="cp" style="color:${tc(s.total_score)}">${s.total_score ?? '—'}</span></td>
+<td><span class="cp" style="color:${cc2(s.mfses_short)}">${s.mfses_short != null ? (+s.mfses_short).toFixed(1) : '—'}</span></td>
+<td><span class="cp" style="color:${cc2(s.mfses_mid)}">${s.mfses_mid != null ? (+s.mfses_mid).toFixed(1) : '—'}</span></td>
+<td><span class="cp" style="color:${cc2(s.mfses_long)}">${s.mfses_long != null ? (+s.mfses_long).toFixed(1) : '—'}</span></td>
+<td class="${uc}" style="font-family:var(--mono);font-size:12px">${us}</td><td style="font-family:var(--mono);font-size:12px">${dy}</td>`; return tr
+        }
 
-function sc(v,c){if(v==null)return'<span style="color:var(--text-faint)">—</span>';return`<span class="sb"><span class="sf" style="width:${v/20*40}px;background:var(${c})"></span>${v}</span>`}
-function cc2(v){if(v==null)return'var(--text-faint)';if(v>=16)return'var(--green)';if(v>=13)return'var(--accent)';if(v>=10)return'var(--yellow)';if(v>=7)return'var(--orange)';return'var(--red)'}
-function tc(v){if(v==null)return'var(--text-faint)';if(v>=90)return'var(--green)';if(v>=72)return'var(--accent)';if(v>=60)return'var(--yellow)';if(v>=48)return'var(--orange)';return'var(--red)'}
+        function sc(v, c) { if (v == null) return '<span style="color:var(--text-faint)">—</span>'; return `<span class="sb"><span class="sf" style="width:${v / 20 * 40}px;background:var(${c})"></span>${v}</span>` }
+        function cc2(v) { if (v == null) return 'var(--text-faint)'; if (v >= 16) return 'var(--green)'; if (v >= 13) return 'var(--accent)'; if (v >= 10) return 'var(--yellow)'; if (v >= 7) return 'var(--orange)'; return 'var(--red)' }
+        function tc(v) { if (v == null) return 'var(--text-faint)'; if (v >= 90) return 'var(--green)'; if (v >= 72) return 'var(--accent)'; if (v >= 60) return 'var(--yellow)'; if (v >= 48) return 'var(--orange)'; return 'var(--red)' }
 
-function togD(tk,tr){const ex=document.querySelector('.dr');if(ex){ex.remove();if(EX===tk){EX=null;return}}EX=tk;const s=F.find(x=>x.ticker===tk);if(!s)return;
-const d=document.createElement('tr');d.className='dr';d.innerHTML=`<td colspan="16"><div class="dc">
-<div class="dg"><h4>Graham Valuation</h4><div class="di"><span class="dl">Graham Value</span><span class="dv">$${s.graham_value?(+s.graham_value).toFixed(2):'—'}</span></div><div class="di"><span class="dl">Price</span><span class="dv">$${s.price?(+s.price).toFixed(2):'—'}</span></div><div class="di"><span class="dl">Upside</span><span class="dv ${+s.graham_upside_pct>0?'up':'dn'}">${s.graham_upside_pct!=null?(+s.graham_upside_pct).toFixed(1)+'%':'—'}</span></div></div>
-<div class="dg"><h4>Earnings</h4><div class="di"><span class="dl">EPS</span><span class="dv">$${s.eps_current?(+s.eps_current).toFixed(2):'—'}</span></div><div class="di"><span class="dl">Growth</span><span class="dv">${s.eps_growth_rate!=null?(+s.eps_growth_rate).toFixed(1)+'%':'—'}</span></div><div class="di"><span class="dl">D/E</span><span class="dv">${s.debt_to_equity!=null?(+s.debt_to_equity).toFixed(2):'—'}</span></div></div>
-<div class="dg"><h4>Dividends</h4><div class="di"><span class="dl">Annual</span><span class="dv">$${s.annual_dividend?(+s.annual_dividend).toFixed(2):'—'}</span></div><div class="di"><span class="dl">Yield</span><span class="dv">${s.dividend_yield?(+s.dividend_yield).toFixed(2)+'%':'—'}</span></div><div class="di"><span class="dl">Payout</span><span class="dv">${s.payout_ratio?(+s.payout_ratio).toFixed(1)+'%':'—'}</span></div><div class="di"><span class="dl">5yr Grw</span><span class="dv">${s.dividend_growth_5yr?(+s.dividend_growth_5yr).toFixed(1)+'%':'—'}</span></div><div class="di"><span class="dl">Consec</span><span class="dv">${s.consecutive_increases??'—'} yrs</span></div><div class="di"><span class="dl">Ex-Div</span><span class="dv">${s.ex_dividend_date||'—'}</span></div></div>
-<div class="dg"><h4>Market Data</h4><div class="di"><span class="dl">Market Cap</span><span class="dv">${fmc(s.market_cap)}</span></div><div class="di"><span class="dl">Volume</span><span class="dv">${s.volume?(+s.volume).toLocaleString():'—'}</span></div><div class="di"><span class="dl">Vol Ratio</span><span class="dv">${s.volume_ratio?(+s.volume_ratio).toFixed(2)+'x':'—'}</span></div><div class="di"><span class="dl">Sector</span><span class="dv">${s.sector||'—'}</span></div><div class="di"><span class="dl">Tier</span><span class="dv">${['','Mega','Large','Mid','Small'][s.tier]||'—'}</span></div><div class="di"><span class="dl">Quality</span><span class="dv">${s.data_quality_score??'—'}%</span></div></div>
-</div></td>`;tr.after(d)}
+        function togD(tk, tr) {
+            const ex = document.querySelector('.dr'); if (ex) { ex.remove(); if (EX === tk) { EX = null; return } } EX = tk; const s = F.find(x => x.ticker === tk); if (!s) return;
+            const d = document.createElement('tr'); d.className = 'dr'; d.innerHTML = `<td colspan="16"><div class="dc">
+<div class="dg"><h4>Graham Valuation</h4><div class="di"><span class="dl">Graham Value</span><span class="dv">$${s.graham_value ? (+s.graham_value).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Price</span><span class="dv">$${s.price ? (+s.price).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Upside</span><span class="dv ${+s.graham_upside_pct > 0 ? 'up' : 'dn'}">${s.graham_upside_pct != null ? (+s.graham_upside_pct).toFixed(1) + '%' : '—'}</span></div></div>
+<div class="dg"><h4>Earnings</h4><div class="di"><span class="dl">EPS</span><span class="dv">$${s.eps_current ? (+s.eps_current).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Growth</span><span class="dv">${s.eps_growth_rate != null ? (+s.eps_growth_rate).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">D/E</span><span class="dv">${s.debt_to_equity != null ? (+s.debt_to_equity).toFixed(2) : '—'}</span></div></div>
+<div class="dg"><h4>Dividends</h4><div class="di"><span class="dl">Annual</span><span class="dv">$${s.annual_dividend ? (+s.annual_dividend).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Yield</span><span class="dv">${s.dividend_yield ? (+s.dividend_yield).toFixed(2) + '%' : '—'}</span></div><div class="di"><span class="dl">Payout</span><span class="dv">${s.payout_ratio ? (+s.payout_ratio).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">5yr Grw</span><span class="dv">${s.dividend_growth_5yr ? (+s.dividend_growth_5yr).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">Consec</span><span class="dv">${s.consecutive_increases ?? '—'} yrs</span></div><div class="di"><span class="dl">Ex-Div</span><span class="dv">${s.ex_dividend_date || '—'}</span></div></div>
+<div class="dg"><h4>Market Data</h4><div class="di"><span class="dl">Market Cap</span><span class="dv">${fmc(s.market_cap)}</span></div><div class="di"><span class="dl">Volume</span><span class="dv">${s.volume ? (+s.volume).toLocaleString() : '—'}</span></div><div class="di"><span class="dl">Vol Ratio</span><span class="dv">${s.volume_ratio ? (+s.volume_ratio).toFixed(2) + 'x' : '—'}</span></div><div class="di"><span class="dl">Sector</span><span class="dv">${s.sector || '—'}</span></div><div class="di"><span class="dl">Tier</span><span class="dv">${['', 'Mega', 'Large', 'Mid', 'Small'][s.tier] || '—'}</span></div><div class="di"><span class="dl">Quality</span><span class="dv">${s.data_quality_score ?? '—'}%</span></div></div>
+</div></td>`; tr.after(d)
+        }
 
-function fmc(v){if(!v)return'—';v=+v;if(v>=1e12)return`$${(v/1e12).toFixed(2)}T`;if(v>=1e9)return`$${(v/1e9).toFixed(1)}B`;if(v>=1e6)return`$${(v/1e6).toFixed(0)}M`;return`$${v.toLocaleString()}`}
-function stats(){$('sT').textContent=A.length;$('sH').textContent=A.filter(s=>s.markov_state==='HOT').length;$('sW').textContent=A.filter(s=>s.markov_state==='WARM').length;$('sC').textContent=A.filter(s=>s.markov_state==='COLD').length;$('sF').textContent=A.filter(s=>s.markov_state==='FROZEN').length;$('sK').textContent=A.filter(s=>s.is_triple_crown).length}
-function $(id){return document.getElementById(id)}
-function toggleTheme(){const b=document.body;b.dataset.theme=b.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('ss-t',b.dataset.theme)}catch(e){}}
-try{const t=localStorage.getItem('ss-t');if(t)document.body.dataset.theme=t}catch(e){}
+        function fmc(v) { if (!v) return '—'; v = +v; if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`; if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`; if (v >= 1e6) return `$${(v / 1e6).toFixed(0)}M`; return `$${v.toLocaleString()}` }
+        function stats() { $('sT').textContent = A.length; $('sH').textContent = A.filter(s => s.markov_state === 'HOT').length; $('sW').textContent = A.filter(s => s.markov_state === 'WARM').length; $('sC').textContent = A.filter(s => s.markov_state === 'COLD').length; $('sF').textContent = A.filter(s => s.markov_state === 'FROZEN').length; $('sK').textContent = A.filter(s => s.is_triple_crown).length }
+        function $(id) { return document.getElementById(id) }
+        function toggleTheme() { const b = document.body; b.dataset.theme = b.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('ss-t', b.dataset.theme) } catch (e) { } }
+        try { const t = localStorage.getItem('ss-t'); if (t) document.body.dataset.theme = t } catch (e) { }
 
-window.addEventListener('scroll',()=>{if(RC>=F.length)return;if(window.innerHeight+window.scrollY>document.documentElement.scrollHeight-500)render()});
-let dt;$('q').addEventListener('input',()=>{clearTimeout(dt);dt=setTimeout(af,200)});
-$('fSec').addEventListener('change',af);$('fTier').addEventListener('change',af);$('fSt').addEventListener('change',af);$('fVal').addEventListener('change',af);$('fFlg').addEventListener('change',af);
-$('srt').addEventListener('change',e=>{const[c,d]=e.target.value.split('-');S={c,d:d==='a'?'asc':'desc'};ss();RC=0;render()});
-document.querySelectorAll('th[data-c]').forEach(t=>t.addEventListener('click',()=>setS(t.dataset.c)));
-load();
-</script>
+        window.addEventListener('scroll', () => { if (RC >= F.length) return; if (window.innerHeight + window.scrollY > document.documentElement.scrollHeight - 500) render() });
+        let dt; $('q').addEventListener('input', () => { clearTimeout(dt); dt = setTimeout(af, 200) });
+        $('fSec').addEventListener('change', af); $('fTier').addEventListener('change', af); $('fSt').addEventListener('change', af); $('fVal').addEventListener('change', af); $('fFlg').addEventListener('change', af);
+        $('srt').addEventListener('change', e => { const [c, d] = e.target.value.split('-'); S = { c, d: d === 'a' ? 'asc' : 'desc' }; ss(); RC = 0; render() });
+        const MC_STEPS = [0, 1e8, 1e9, 1e10, 1e11, 5e11], MC_LABELS = ['All', '$100M+', '$1B+', '$10B+', '$100B+', '$500B+'];
+        $('mcSlider').addEventListener('input', e => { const v = +e.target.value; $('mcL').textContent = MC_LABELS[v]; af() });
+        document.querySelectorAll('th[data-c]').forEach(t => t.addEventListener('click', () => setS(t.dataset.c)));
+        load();
+    </script>
 </body>
+
 </html>
