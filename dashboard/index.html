@@ -76,7 +76,8 @@
             justify-content: space-between;
             position: sticky;
             top: 0;
-            z-index: 100
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1)
         }
 
         .logo {
@@ -233,7 +234,9 @@
         thead {
             position: sticky;
             top: 144px;
-            z-index: 90
+            z-index: 90;
+            background: var(--surface2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05)
         }
 
         th {
@@ -460,6 +463,60 @@
             border: 2px solid var(--surface)
         }
 
+        .ext-btn {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            font-family: var(--font);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap
+        }
+
+        .yf-btn {
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: #0f0b2e;
+            border: 1px solid #1e1b4b;
+            color: #a78bfa;
+            font-size: 12px
+        }
+
+        .yf-btn:hover {
+            background: #1e1b4b;
+            border-color: #6d28d9
+        }
+
+        .yf-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: white;
+            font-size: 11px;
+            font-weight: 700
+        }
+
+        .sec-btn {
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            background: rgba(34,197,94,0.06);
+            border: 1px solid rgba(34,197,94,0.2);
+            color: #4ade80;
+            font-size: 12px;
+            letter-spacing: 0.3px
+        }
+
+        .sec-btn:hover {
+            background: rgba(34,197,94,0.15)
+        }
+
         @media(max-width:768px) {
             .header {
                 padding: 10px 14px
@@ -662,7 +719,7 @@
         function togD(tk, tr) {
             const ex = document.querySelector('.dr'); if (ex) { ex.remove(); if (EX === tk) { EX = null; return } } EX = tk; const s = F.find(x => x.ticker === tk); if (!s) return;
             const d = document.createElement('tr'); d.className = 'dr'; d.innerHTML = `<td colspan="16"><div class="dc">
-<div class="dg"><h4>Graham Valuation</h4><div class="di"><span class="dl">Graham Value</span><span class="dv">$${s.graham_value ? (+s.graham_value).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Price</span><span class="dv">$${s.price ? (+s.price).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Upside</span><span class="dv ${+s.graham_upside_pct > 0 ? 'up' : 'dn'}">${s.graham_upside_pct != null ? (+s.graham_upside_pct).toFixed(1) + '%' : '—'}</span></div></div>
+<div class="dg"><h4>Graham Valuation</h4><div class="di"><span class="dl">Graham Value</span><span class="dv">$${s.graham_value ? (+s.graham_value).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Price</span><span class="dv">$${s.price ? (+s.price).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Upside</span><span class="dv ${+s.graham_upside_pct > 0 ? 'up' : 'dn'}">${s.graham_upside_pct != null ? (+s.graham_upside_pct).toFixed(1) + '%' : '—'}</span></div><div style="display:flex;align-items:center;gap:10px;margin-top:12px"><a href="https://finance.yahoo.com/quote/${tk}/" target="_blank" rel="noopener noreferrer" class="ext-btn yf-btn"><span class="yf-badge">Y!</span>Yahoo Finance<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a><a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=${tk}&type=10-K&dateb=&owner=include&count=10" target="_blank" rel="noopener noreferrer" class="ext-btn sec-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>SEC Filings<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a></div></div>
 <div class="dg"><h4>Earnings</h4><div class="di"><span class="dl">EPS</span><span class="dv">$${s.eps_current ? (+s.eps_current).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Growth</span><span class="dv">${s.eps_growth_rate != null ? (+s.eps_growth_rate).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">D/E</span><span class="dv">${s.debt_to_equity != null ? (+s.debt_to_equity).toFixed(2) : '—'}</span></div></div>
 <div class="dg"><h4>Dividends</h4><div class="di"><span class="dl">Annual</span><span class="dv">$${s.annual_dividend ? (+s.annual_dividend).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Yield</span><span class="dv">${s.dividend_yield ? (+s.dividend_yield).toFixed(2) + '%' : '—'}</span></div><div class="di"><span class="dl">Payout</span><span class="dv">${s.payout_ratio ? (+s.payout_ratio).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">5yr Grw</span><span class="dv">${s.dividend_growth_5yr ? (+s.dividend_growth_5yr).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">Consec</span><span class="dv">${s.consecutive_increases ?? '—'} yrs</span></div><div class="di"><span class="dl">Ex-Div</span><span class="dv">${s.ex_dividend_date || '—'}</span></div></div>
 <div class="dg"><h4>Market Data</h4><div class="di"><span class="dl">Market Cap</span><span class="dv">${fmc(s.market_cap)}</span></div><div class="di"><span class="dl">Volume</span><span class="dv">${s.volume ? (+s.volume).toLocaleString() : '—'}</span></div><div class="di"><span class="dl">Vol Ratio</span><span class="dv">${s.volume_ratio ? (+s.volume_ratio).toFixed(2) + 'x' : '—'}</span></div><div class="di"><span class="dl">Sector</span><span class="dv">${s.sector || '—'}</span></div><div class="di"><span class="dl">Tier</span><span class="dv">${['', 'Mega', 'Large', 'Mid', 'Small'][s.tier] || '—'}</span></div><div class="di"><span class="dl">Quality</span><span class="dv">${s.data_quality_score ?? '—'}%</span></div></div>
@@ -682,6 +739,28 @@
         const MC_STEPS = [0, 1e8, 1e9, 1e10, 1e11, 5e11], MC_LABELS = ['All', '$100M+', '$1B+', '$10B+', '$100B+', '$500B+'];
         $('mcSlider').addEventListener('input', e => { const v = +e.target.value; $('mcL').textContent = MC_LABELS[v]; af() });
         document.querySelectorAll('th[data-c]').forEach(t => t.addEventListener('click', () => setS(t.dataset.c)));
+
+        // Fix sticky header positioning with actual measured heights
+        function fixStickyHeaders() {
+            const header = document.querySelector('.header');
+            const toolbar = document.querySelector('.toolbar');
+            const sbar = document.querySelector('.sbar');
+            const thead = document.querySelector('thead');
+
+            if (header && toolbar && sbar && thead) {
+                const headerH = header.offsetHeight;
+                const toolbarH = toolbar.offsetHeight;
+                const sbarH = sbar.offsetHeight;
+
+                toolbar.style.top = `${headerH}px`;
+                sbar.style.top = `${headerH + toolbarH}px`;
+                thead.style.top = `${headerH + toolbarH + sbarH}px`;
+            }
+        }
+
+        window.addEventListener('load', fixStickyHeaders);
+        window.addEventListener('resize', fixStickyHeaders);
+
         load();
     </script>
 </body>
