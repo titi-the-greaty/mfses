@@ -1,11 +1,8 @@
 {
-  "buildCommand": null,
-  "framework": null,
-  "rewrites": [
-    { "source": "/", "destination": "/homepage/index.html" },
-    { "source": "/dashboard", "destination": "/dashboard/index.html" },
-    { "source": "/dashboard/(.*)", "destination": "/dashboard/index.html" },
-    { "source": "/(.*)", "destination": "/homepage/index.html" }
+  "routes": [
+    { "src": "/dashboard", "dest": "/dashboard/index.html" },
+    { "src": "/dashboard/(.*)", "dest": "/dashboard/$1" },
+    { "src": "/(.*)", "dest": "/homepage/$1" }
   ],
   "headers": [
     {

@@ -219,8 +219,10 @@
         }
 
         .tw {
+            height: calc(100vh - 184px);
+            overflow-y: auto;
             overflow-x: auto;
-            padding: 0 16px 100px;
+            padding: 0 16px 20px;
             margin: 0
         }
 
@@ -234,8 +236,8 @@
 
         thead {
             position: sticky;
-            top: 144px;
-            z-index: 90;
+            top: 0;
+            z-index: 50;
             background: var(--surface2);
             margin: 0;
             padding: 0
@@ -747,39 +749,6 @@
         const MC_STEPS = [0, 1e8, 1e9, 1e10, 1e11, 5e11], MC_LABELS = ['All', '$100M+', '$1B+', '$10B+', '$100B+', '$500B+'];
         $('mcSlider').addEventListener('input', e => { const v = +e.target.value; $('mcL').textContent = MC_LABELS[v]; af() });
         document.querySelectorAll('th[data-c]').forEach(t => t.addEventListener('click', () => setS(t.dataset.c)));
-
-        // Fix sticky header positioning with actual measured heights
-        function fixStickyHeaders() {
-            const header = document.querySelector('.header');
-            const toolbar = document.querySelector('.toolbar');
-            const sbar = document.querySelector('.sbar');
-            const thead = document.querySelector('thead');
-
-            if (header && toolbar && sbar && thead) {
-                // Get actual rendered heights including borders
-                const headerRect = header.getBoundingClientRect();
-                const toolbarRect = toolbar.getBoundingClientRect();
-                const sbarRect = sbar.getBoundingClientRect();
-
-                const headerH = headerRect.height;
-                const toolbarH = toolbarRect.height;
-                const sbarH = sbarRect.height;
-
-                toolbar.style.top = `${headerH}px`;
-                sbar.style.top = `${headerH + toolbarH}px`;
-                thead.style.top = `${headerH + toolbarH + sbarH}px`;
-
-                console.log('Sticky positions:', {headerH, toolbarH, sbarH, theadTop: headerH + toolbarH + sbarH});
-            }
-        }
-
-        // Run multiple times to ensure all elements are rendered
-        window.addEventListener('load', () => {
-            fixStickyHeaders();
-            setTimeout(fixStickyHeaders, 100);
-            setTimeout(fixStickyHeaders, 500);
-        });
-        window.addEventListener('resize', fixStickyHeaders);
 
         load();
     </script>
