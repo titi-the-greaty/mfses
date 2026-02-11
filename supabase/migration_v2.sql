@@ -19,7 +19,8 @@ COMMENT ON COLUMN stock_raw_data.obv_trend IS 'On-Balance Volume trend % over 20
 COMMENT ON COLUMN stock_raw_data.obv_price_divergence IS 'OBV trend minus price trend (positive = bullish divergence)';
 COMMENT ON COLUMN stock_raw_data.price_trend_20d IS 'Price trend % over 20 days';
 
--- Update the dashboard_stocks view to include new fields
+-- Drop and recreate view (column order changed, can't just replace)
+DROP VIEW IF EXISTS dashboard_stocks;
 CREATE OR REPLACE VIEW dashboard_stocks AS
 SELECT
     t.ticker,

@@ -327,12 +327,12 @@ def score_dividends(dividend_yield: float | None, payout_ratio: float | None) ->
 
 def calculate_moat_score(market_cap: int | None, analyst_rating: float | None) -> int:
     """
-    MOAT = (Market Cap score Ã 0.5) + (Analyst Rating score Ã 0.5)
+    MOAT = (Market Cap score Ã 0.67) + (Analyst Rating score Ã 0.33)
     """
     mc_score = score_market_cap(market_cap)
     ar_score = score_analyst_rating(analyst_rating)
 
-    combined = (mc_score * 0.5) + (ar_score * 0.5)
+    combined = (mc_score * 0.67) + (ar_score * 0.33)
     return max(0, min(20, int(round(combined))))
 
 

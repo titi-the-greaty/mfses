@@ -1,16 +1,13 @@
 {
-  "routes": [
-    { "src": "/dashboard", "dest": "/dashboard/index.html" },
-    { "src": "/dashboard/(.*)", "dest": "/dashboard/$1" },
-    { "src": "/(.*)", "dest": "/homepage/$1" }
+  "rewrites": [
+    { "source": "/dashboard", "destination": "/dashboard/index.html" },
+    { "source": "/", "destination": "/homepage/index.html" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
     }
   ]
