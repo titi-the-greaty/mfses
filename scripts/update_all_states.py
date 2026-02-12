@@ -19,12 +19,19 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 print("Fetching all stocks from dashboard_stocks...")
-result = supabase.table("dashboard_stocks") \
-    .select("ticker, volume_ratio, price_change_pct") \
-    .limit(3000) \
-    .execute()
-
-stocks = result.data
+# Supabase caps at 1000 rows per request, so paginate
+stocks = []
+page_size = 1000
+offset = 0
+while True:
+    result = supabase.table("dashboard_stocks") \
+        .select("ticker, volume_ratio, price_change_pct") \
+        .range(offset, offset + page_size - 1) \
+        .execute()
+    stocks.extend(result.data)
+    if len(result.data) < page_size:
+        break
+    offset += page_size
 print(f"Found {len(stocks)} stocks\n")
 
 # Classify stocks
@@ -83,4 +90,4 @@ for i in range(0, len(updates), batch_size):
     supabase.table("stock_states").upsert(batch).execute()
     print(f"  Processed {min(i+batch_size, len(updates))}/{len(updates)} stocks")
 
-print("\n✅ Done! Refresh your dashboard to see the updated states.")
+print("\nDone! Refresh your dashboard to see the updated states.")
