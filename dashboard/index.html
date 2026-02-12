@@ -8,6 +8,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --bg: #0a0c10;
@@ -527,6 +529,134 @@
             background: rgba(34,197,94,0.15)
         }
 
+        /* ===== Chart Panel ===== */
+        .chart-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--border);
+            background: var(--surface);
+            overflow-x: auto;
+            scrollbar-width: none
+        }
+
+        .chart-tabs::-webkit-scrollbar {
+            display: none
+        }
+
+        .chart-tab {
+            padding: 10px 18px;
+            font-size: 12px;
+            font-family: var(--mono);
+            color: var(--text-dim);
+            cursor: pointer;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: color .15s, border-color .15s;
+            user-select: none
+        }
+
+        .chart-tab:hover {
+            color: var(--text)
+        }
+
+        .chart-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            font-weight: 600
+        }
+
+        .chart-body {
+            padding: 16px 24px;
+            background: var(--bg);
+            min-height: 320px;
+            position: relative
+        }
+
+        .chart-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 12px;
+            gap: 10px
+        }
+
+        .chart-loading .sp {
+            width: 20px;
+            height: 20px;
+            margin: 0
+        }
+
+        .chart-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: var(--red);
+            font-family: var(--mono);
+            font-size: 12px
+        }
+
+        .chart-nodata {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: var(--text-faint);
+            font-family: var(--mono);
+            font-size: 12px
+        }
+
+        .chart-wrap {
+            width: 100%;
+            height: 400px;
+            position: relative
+        }
+
+        .chart-wrap canvas {
+            max-width: 100% !important
+        }
+
+        .ind-bar {
+            display: flex;
+            gap: 6px;
+            padding: 8px 0;
+            flex-wrap: wrap
+        }
+
+        .ind-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-family: var(--mono);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all .15s
+        }
+
+        .ind-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .ind-btn.on {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        /* Summary grid inside chart panel */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px
+        }
+
         @media(max-width:768px) {
             .header {
                 padding: 10px 14px
@@ -553,6 +683,23 @@
 
             .dc {
                 grid-template-columns: 1fr 1fr
+            }
+
+            .chart-tab {
+                padding: 8px 12px;
+                font-size: 11px
+            }
+
+            .chart-body {
+                padding: 12px 10px
+            }
+
+            .chart-wrap {
+                height: 300px
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr
             }
         }
     </style>
@@ -739,20 +886,476 @@
         function cc2(v) { if (v == null) return 'var(--text-faint)'; if (v >= 16) return 'var(--green)'; if (v >= 13) return 'var(--accent)'; if (v >= 10) return 'var(--yellow)'; if (v >= 7) return 'var(--orange)'; return 'var(--red)' }
         function tc(v) { if (v == null) return 'var(--text-faint)'; if (v >= 90) return 'var(--green)'; if (v >= 72) return 'var(--accent)'; if (v >= 60) return 'var(--yellow)'; if (v >= 48) return 'var(--orange)'; return 'var(--red)' }
 
+        // ============ CHART SYSTEM ============
+        const PG_KEY = 'FzNPP96rxiDhDz3xTQYB31Ucrek54q7x';
+        const CHART_CACHE = {}; // In-memory cache {ticker: {data, ts}}
+        const CACHE_TTL = 30 * 60 * 1000; // 30 min
+        let activeChart = null; // Lightweight Charts instance
+        let activeChartJS = []; // Chart.js instances
+        const TABS = ['Summary', 'Price', 'Income', 'Cash Flow', 'Growth', 'Margins', 'Allocation'];
+
+        function cleanupCharts() {
+            if (activeChart) { try { activeChart.remove() } catch(e){} activeChart = null; }
+            activeChartJS.forEach(c => { try { c.destroy() } catch(e){} });
+            activeChartJS = [];
+        }
+
         function togD(tk, tr) {
-            const ex = document.querySelector('.dr'); if (ex) { ex.remove(); if (EX === tk) { EX = null; return } } EX = tk; const s = F.find(x => x.ticker === tk); if (!s) return;
-            const d = document.createElement('tr'); d.className = 'dr'; d.innerHTML = `<td colspan="16"><div class="dc">
+            const ex = document.querySelector('.dr');
+            if (ex) { cleanupCharts(); ex.remove(); if (EX === tk) { EX = null; return } }
+            EX = tk; const s = F.find(x => x.ticker === tk); if (!s) return;
+            const d = document.createElement('tr'); d.className = 'dr';
+            d.innerHTML = `<td colspan="16"><div class="chart-tabs">${TABS.map((t,i) =>
+                `<div class="chart-tab${i===0?' active':''}" data-tab="${t}">${t}</div>`).join('')}</div><div class="chart-body" id="cbody"></div></td>`;
+            tr.after(d);
+            d.querySelectorAll('.chart-tab').forEach(tab => tab.onclick = () => {
+                d.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                switchTab(tab.dataset.tab, tk, s);
+            });
+            switchTab('Summary', tk, s);
+        }
+
+        function switchTab(tab, tk, s) {
+            cleanupCharts();
+            const body = document.getElementById('cbody');
+            if (!body) return;
+            if (tab === 'Summary') { renderSummary(body, tk, s); return; }
+            body.innerHTML = '<div class="chart-loading"><div class="sp"></div>Loading chart data...</div>';
+            fetchChartData(tk).then(data => {
+                if (EX !== tk) return;
+                const b = document.getElementById('cbody');
+                if (!b) return;
+                switch(tab) {
+                    case 'Price': renderPriceChart(b, data, tk); break;
+                    case 'Income': renderIncomeChart(b, data); break;
+                    case 'Cash Flow': renderCashFlowChart(b, data); break;
+                    case 'Growth': renderGrowthChart(b, data); break;
+                    case 'Margins': renderMarginsChart(b, data); break;
+                    case 'Allocation': renderAllocationChart(b, data); break;
+                }
+            }).catch(err => {
+                const b = document.getElementById('cbody');
+                if (b) b.innerHTML = `<div class="chart-error">Failed to load data: ${err.message}</div>`;
+            });
+        }
+
+        function renderSummary(body, tk, s) {
+            body.innerHTML = `<div class="summary-grid">
 <div class="dg"><h4>Graham Valuation</h4><div class="di"><span class="dl">Graham Value</span><span class="dv">$${s.graham_value ? (+s.graham_value).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Price</span><span class="dv">$${s.price ? (+s.price).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Upside</span><span class="dv ${+s.graham_upside_pct > 0 ? 'up' : 'dn'}">${s.graham_upside_pct != null ? (+s.graham_upside_pct).toFixed(1) + '%' : '—'}</span></div><div style="display:flex;align-items:center;gap:10px;margin-top:12px"><a href="https://finance.yahoo.com/quote/${tk}/" target="_blank" rel="noopener noreferrer" class="ext-btn yf-btn"><span class="yf-badge">Y!</span>Yahoo Finance<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a><a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=${tk}&type=10-K&dateb=&owner=include&count=10" target="_blank" rel="noopener noreferrer" class="ext-btn sec-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>SEC Filings<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a></div></div>
 <div class="dg"><h4>Earnings</h4><div class="di"><span class="dl">EPS</span><span class="dv">$${s.eps_current ? (+s.eps_current).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Growth</span><span class="dv">${s.eps_growth_rate != null ? (+s.eps_growth_rate).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">D/E</span><span class="dv">${s.debt_to_equity != null ? (+s.debt_to_equity).toFixed(2) : '—'}</span></div></div>
 <div class="dg"><h4>Dividends</h4><div class="di"><span class="dl">Annual</span><span class="dv">$${s.annual_dividend ? (+s.annual_dividend).toFixed(2) : '—'}</span></div><div class="di"><span class="dl">Yield</span><span class="dv">${s.dividend_yield ? (+s.dividend_yield).toFixed(2) + '%' : '—'}</span></div><div class="di"><span class="dl">Payout</span><span class="dv">${s.payout_ratio ? (+s.payout_ratio).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">5yr Grw</span><span class="dv">${s.dividend_growth_5yr ? (+s.dividend_growth_5yr).toFixed(1) + '%' : '—'}</span></div><div class="di"><span class="dl">Consec</span><span class="dv">${s.consecutive_increases ?? '—'} yrs</span></div><div class="di"><span class="dl">Ex-Div</span><span class="dv">${s.ex_dividend_date || '—'}</span></div></div>
 <div class="dg"><h4>Market Data</h4><div class="di"><span class="dl">Market Cap</span><span class="dv">${fmc(s.market_cap)}</span></div><div class="di"><span class="dl">Volume</span><span class="dv">${s.volume ? (+s.volume).toLocaleString() : '—'}</span></div><div class="di"><span class="dl">Vol Ratio</span><span class="dv">${s.volume_ratio ? (+s.volume_ratio).toFixed(2) + 'x' : '—'}</span></div><div class="di"><span class="dl">Sector</span><span class="dv">${s.sector || '—'}</span></div><div class="di"><span class="dl">Tier</span><span class="dv">${['', 'Mega', 'Large', 'Mid', 'Small'][s.tier] || '—'}</span></div><div class="di"><span class="dl">Quality</span><span class="dv">${s.data_quality_score ?? '—'}%</span></div></div>
-</div></td>`; tr.after(d)
+</div>`;
+        }
+
+        // ============ DATA FETCHING LAYER ============
+        async function fetchChartData(ticker) {
+            // 1. In-memory cache
+            if (CHART_CACHE[ticker] && (Date.now() - CHART_CACHE[ticker].ts < CACHE_TTL)) {
+                return CHART_CACHE[ticker].data;
+            }
+            // 2. Supabase cache
+            try {
+                const r = await fetch(`${SB_URL}/rest/v1/stock_financials_cache?ticker=eq.${ticker}&expires_at=gt.${new Date().toISOString()}`, {
+                    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+                });
+                const rows = await r.json();
+                if (rows && rows.length && rows[0].income_data) {
+                    const data = { income: rows[0].income_data, cashflow: rows[0].cashflow_data, balance: rows[0].balance_data, bars: rows[0].price_bars };
+                    CHART_CACHE[ticker] = { data, ts: Date.now() };
+                    return data;
+                }
+            } catch(e) { /* cache miss, continue */ }
+            // 3. Fetch from Polygon
+            const data = await fetchFromPolygon(ticker);
+            CHART_CACHE[ticker] = { data, ts: Date.now() };
+            // 4. Write to Supabase cache (fire-and-forget)
+            try {
+                fetch(`${SB_URL}/rest/v1/stock_financials_cache`, {
+                    method: 'POST',
+                    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+                    body: JSON.stringify({ ticker, income_data: data.income, cashflow_data: data.cashflow, balance_data: data.balance, price_bars: data.bars, cached_at: new Date().toISOString(), expires_at: new Date(Date.now() + 7*24*60*60*1000).toISOString() })
+                });
+            } catch(e) { /* cache write failed, non-critical */ }
+            return data;
+        }
+
+        async function fetchFromPolygon(ticker) {
+            const [finRes, barRes] = await Promise.all([
+                fetch(`https://api.polygon.io/vX/reference/financials?ticker=${ticker}&limit=5&sort=period_of_report_date&order=desc&apiKey=${PG_KEY}`),
+                fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${dateStr(-730)}/${dateStr(0)}?adjusted=true&sort=asc&limit=730&apiKey=${PG_KEY}`)
+            ]);
+            const fin = await finRes.json();
+            const bar = await barRes.json();
+            const income = [], cashflow = [], balance = [];
+            if (fin.results) {
+                for (const r of fin.results) {
+                    const period = r.fiscal_period || '';
+                    const year = r.fiscal_year || '';
+                    const label = `${period} ${year}`;
+                    if (r.financials?.income_statement) {
+                        const is = r.financials.income_statement;
+                        income.push({ label, year, revenue: is.revenues?.value, gross_profit: is.gross_profit?.value, op_income: is.operating_income_loss?.value, net_income: is.net_income_loss?.value, cost_of_revenue: is.cost_of_revenue?.value, op_expenses: is.operating_expenses?.value, eps: is.basic_earnings_per_share?.value });
+                    }
+                    if (r.financials?.cash_flow_statement) {
+                        const cf = r.financials.cash_flow_statement;
+                        cashflow.push({ label, year, operating: cf.net_cash_flow_from_operating_activities?.value, investing: cf.net_cash_flow_from_investing_activities?.value, financing: cf.net_cash_flow_from_financing_activities?.value, capex: cf.net_cash_flow_from_investing_activities_continuing?.value });
+                    }
+                    if (r.financials?.balance_sheet) {
+                        const bs = r.financials.balance_sheet;
+                        balance.push({ label, year, total_assets: bs.assets?.value, total_liabilities: bs.liabilities?.value, equity: bs.equity?.value, current_assets: bs.current_assets?.value, current_liabilities: bs.current_liabilities?.value });
+                    }
+                }
+            }
+            const bars = (bar.results || []).map(b => ({ t: b.t, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v, vw: b.vw }));
+            return { income: income.reverse(), cashflow: cashflow.reverse(), balance: balance.reverse(), bars };
+        }
+
+        function dateStr(offsetDays) {
+            const d = new Date(); d.setDate(d.getDate() + offsetDays);
+            return d.toISOString().split('T')[0];
+        }
+
+        // ============ CHART.JS THEME HELPERS ============
+        function isDark() { return document.body.dataset.theme !== 'light'; }
+        function cjsColors() {
+            const dk = isDark();
+            return {
+                text: dk ? '#9ca3b8' : '#5a6178', grid: dk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                green: '#22c55e', red: '#ef4444', blue: '#3b82f6', orange: '#f97316', purple: '#a855f7', yellow: '#eab308', cyan: '#06b6d4', pink: '#ec4899',
+                bg: dk ? '#0a0c10' : '#f5f6fa', surface: dk ? '#12151c' : '#ffffff'
+            };
+        }
+
+        function cjsOpts(title, yFmt) {
+            const c = cjsColors();
+            return {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: c.text, font: { family: "'JetBrains Mono', monospace", size: 11 } } },
+                    title: { display: !!title, text: title, color: c.text, font: { family: "'Outfit', sans-serif", size: 14, weight: 600 } },
+                    tooltip: { callbacks: { label: ctx => { const v = ctx.parsed.y ?? ctx.parsed; return `${ctx.dataset.label}: ${yFmt ? yFmt(v) : fmtNum(v)}` } } }
+                },
+                scales: {
+                    x: { ticks: { color: c.text, font: { size: 10 } }, grid: { color: c.grid } },
+                    y: { ticks: { color: c.text, font: { size: 10 }, callback: v => yFmt ? yFmt(v) : fmtNum(v) }, grid: { color: c.grid } }
+                }
+            };
+        }
+
+        function fmtNum(v) { if (v == null) return '—'; const a = Math.abs(v); if (a >= 1e12) return (v/1e12).toFixed(1)+'T'; if (a >= 1e9) return (v/1e9).toFixed(1)+'B'; if (a >= 1e6) return (v/1e6).toFixed(1)+'M'; if (a >= 1e3) return (v/1e3).toFixed(1)+'K'; return v.toFixed(1); }
+        function fmtDollar(v) { return '$' + fmtNum(v); }
+        function fmtPct(v) { return (v != null ? v.toFixed(1) : '—') + '%'; }
+
+        // ============ PRICE CHART (Lightweight Charts) ============
+        function renderPriceChart(body, data, ticker) {
+            if (!data.bars || !data.bars.length) { body.innerHTML = '<div class="chart-nodata">No price data available</div>'; return; }
+            const dk = isDark();
+            body.innerHTML = `<div class="ind-bar" id="indBar"></div><div class="chart-wrap" id="priceWrap"></div>`;
+            const wrap = document.getElementById('priceWrap');
+            const chart = LightweightCharts.createChart(wrap, {
+                width: wrap.clientWidth, height: wrap.clientHeight,
+                layout: { background: { type: 'solid', color: 'transparent' }, textColor: dk ? '#9ca3b8' : '#5a6178', fontFamily: "'JetBrains Mono', monospace", fontSize: 10 },
+                grid: { vertLines: { color: dk ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }, horzLines: { color: dk ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: dk ? '#1a1e28' : '#e2e5ee' },
+                timeScale: { borderColor: dk ? '#1a1e28' : '#e2e5ee', timeVisible: false }
+            });
+            activeChart = chart;
+
+            const candleData = data.bars.map(b => ({ time: Math.floor(b.t / 1000), open: b.o, high: b.h, low: b.l, close: b.c }));
+            const volData = data.bars.map(b => ({ time: Math.floor(b.t / 1000), value: b.v, color: b.c >= b.o ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)' }));
+
+            const candleSeries = chart.addCandlestickSeries({ upColor: '#22c55e', downColor: '#ef4444', borderDownColor: '#ef4444', borderUpColor: '#22c55e', wickDownColor: '#ef4444', wickUpColor: '#22c55e' });
+            candleSeries.setData(candleData);
+
+            const volSeries = chart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol' });
+            chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+            volSeries.setData(volData);
+
+            chart.timeScale().fitContent();
+
+            // Indicator state
+            const indicators = {};
+            const indSeries = {};
+            const closes = data.bars.map(b => b.c);
+            const times = data.bars.map(b => Math.floor(b.t / 1000));
+
+            function addLine(key, vals, color, title, paneId) {
+                const lineData = []; for (let i = 0; i < vals.length; i++) { if (vals[i] != null) lineData.push({ time: times[i], value: vals[i] }); }
+                if (paneId) {
+                    const s = chart.addLineSeries({ color, lineWidth: 1, priceScaleId: paneId, title });
+                    chart.priceScale(paneId).applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+                    s.setData(lineData); indSeries[key] = s;
+                } else {
+                    const s = chart.addLineSeries({ color, lineWidth: 1, title });
+                    s.setData(lineData); indSeries[key] = s;
+                }
+            }
+
+            function removeLine(key) { if (indSeries[key]) { chart.removeSeries(indSeries[key]); delete indSeries[key]; } }
+
+            function toggleInd(key) {
+                indicators[key] = !indicators[key];
+                if (!indicators[key]) { removeLine(key); if (key === 'BB') { removeLine('BBu'); removeLine('BBl'); } if (key === 'MACD') { removeLine('MACDs'); removeLine('MACDh'); } return; }
+                switch(key) {
+                    case 'SMA20': addLine(key, calcSMA(closes, 20), '#f97316', 'SMA 20'); break;
+                    case 'SMA50': addLine(key, calcSMA(closes, 50), '#a855f7', 'SMA 50'); break;
+                    case 'EMA12': addLine(key, calcEMA(closes, 12), '#3b82f6', 'EMA 12'); break;
+                    case 'EMA26': addLine(key, calcEMA(closes, 26), '#ec4899', 'EMA 26'); break;
+                    case 'BB': {
+                        const bb = calcBollinger(closes, 20);
+                        addLine(key, bb.mid, '#eab308', 'BB Mid');
+                        addLine('BBu', bb.upper, 'rgba(234,179,8,0.4)', 'BB Upper');
+                        addLine('BBl', bb.lower, 'rgba(234,179,8,0.4)', 'BB Lower');
+                        break;
+                    }
+                    case 'RSI': addLine(key, calcRSI(closes, 14), '#06b6d4', 'RSI', 'rsi'); break;
+                    case 'MACD': {
+                        const m = calcMACD(closes);
+                        addLine(key, m.macd, '#3b82f6', 'MACD', 'macd');
+                        addLine('MACDs', m.signal, '#f97316', 'Signal', 'macd');
+                        break;
+                    }
+                    case 'VWAP': {
+                        const vw = data.bars.map(b => b.vw).filter(v => v != null);
+                        if (vw.length === data.bars.length) addLine(key, vw, '#22d3ee', 'VWAP');
+                        else addLine(key, calcVWAP(data.bars), '#22d3ee', 'VWAP');
+                        break;
+                    }
+                }
+            }
+
+            // Render indicator buttons
+            const bar = document.getElementById('indBar');
+            ['SMA20','SMA50','EMA12','EMA26','BB','RSI','MACD','VWAP'].forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = 'ind-btn'; btn.textContent = key;
+                btn.onclick = () => { toggleInd(key); btn.classList.toggle('on'); };
+                bar.appendChild(btn);
+            });
+
+            // Resize observer
+            const ro = new ResizeObserver(() => { chart.applyOptions({ width: wrap.clientWidth }); });
+            ro.observe(wrap);
+        }
+
+        // ============ TECHNICAL INDICATOR CALCULATIONS ============
+        function calcSMA(data, period) {
+            const r = new Array(data.length).fill(null);
+            for (let i = period - 1; i < data.length; i++) {
+                let sum = 0; for (let j = i - period + 1; j <= i; j++) sum += data[j];
+                r[i] = sum / period;
+            } return r;
+        }
+
+        function calcEMA(data, period) {
+            const r = new Array(data.length).fill(null);
+            const k = 2 / (period + 1);
+            let sum = 0; for (let i = 0; i < period; i++) sum += data[i];
+            r[period - 1] = sum / period;
+            for (let i = period; i < data.length; i++) r[i] = data[i] * k + r[i-1] * (1-k);
+            return r;
+        }
+
+        function calcBollinger(data, period) {
+            const mid = calcSMA(data, period);
+            const upper = new Array(data.length).fill(null);
+            const lower = new Array(data.length).fill(null);
+            for (let i = period - 1; i < data.length; i++) {
+                let sq = 0; for (let j = i - period + 1; j <= i; j++) sq += (data[j] - mid[i]) ** 2;
+                const sd = Math.sqrt(sq / period);
+                upper[i] = mid[i] + 2 * sd; lower[i] = mid[i] - 2 * sd;
+            }
+            return { mid, upper, lower };
+        }
+
+        function calcRSI(data, period) {
+            const r = new Array(data.length).fill(null);
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= period; i++) { const d = data[i] - data[i-1]; if (d > 0) gains += d; else losses -= d; }
+            let avgG = gains / period, avgL = losses / period;
+            r[period] = avgL === 0 ? 100 : 100 - 100 / (1 + avgG / avgL);
+            for (let i = period + 1; i < data.length; i++) {
+                const d = data[i] - data[i-1];
+                avgG = (avgG * (period - 1) + (d > 0 ? d : 0)) / period;
+                avgL = (avgL * (period - 1) + (d < 0 ? -d : 0)) / period;
+                r[i] = avgL === 0 ? 100 : 100 - 100 / (1 + avgG / avgL);
+            } return r;
+        }
+
+        function calcMACD(data) {
+            const ema12 = calcEMA(data, 12), ema26 = calcEMA(data, 26);
+            const macd = new Array(data.length).fill(null);
+            for (let i = 25; i < data.length; i++) { if (ema12[i] != null && ema26[i] != null) macd[i] = ema12[i] - ema26[i]; }
+            const macdVals = macd.filter(v => v != null);
+            const sigRaw = calcEMA(macdVals, 9);
+            const signal = new Array(data.length).fill(null);
+            let idx = 0; for (let i = 0; i < data.length; i++) { if (macd[i] != null) { signal[i] = sigRaw[idx++]; } }
+            return { macd, signal };
+        }
+
+        function calcVWAP(bars) {
+            const r = []; let cumTPV = 0, cumVol = 0;
+            for (const b of bars) {
+                const tp = (b.h + b.l + b.c) / 3;
+                cumTPV += tp * b.v; cumVol += b.v;
+                r.push(cumVol ? cumTPV / cumVol : null);
+            } return r;
+        }
+
+        // ============ FINANCIAL CHARTS (Chart.js) ============
+        function renderIncomeChart(body, data) {
+            if (!data.income || !data.income.length) { body.innerHTML = '<div class="chart-nodata">No income statement data available</div>'; return; }
+            const c = cjsColors();
+            body.innerHTML = '<div class="chart-wrap"><canvas id="incChart"></canvas></div>';
+            const labels = data.income.map(d => d.label);
+            const chart = new Chart(document.getElementById('incChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Revenue', data: data.income.map(d => d.revenue), backgroundColor: c.blue },
+                        { label: 'Gross Profit', data: data.income.map(d => d.gross_profit), backgroundColor: c.green },
+                        { label: 'Operating Income', data: data.income.map(d => d.op_income), backgroundColor: c.orange },
+                        { label: 'Net Income', data: data.income.map(d => d.net_income), backgroundColor: c.purple }
+                    ]
+                },
+                options: cjsOpts('Income Statement', fmtDollar)
+            });
+            activeChartJS.push(chart);
+        }
+
+        function renderCashFlowChart(body, data) {
+            if (!data.cashflow || !data.cashflow.length) { body.innerHTML = '<div class="chart-nodata">No cash flow data available</div>'; return; }
+            const c = cjsColors();
+            body.innerHTML = '<div class="chart-wrap"><canvas id="cfChart"></canvas></div>';
+            const labels = data.cashflow.map(d => d.label);
+            const fcf = data.cashflow.map(d => (d.operating || 0) + (d.capex || 0));
+            const opts = cjsOpts('Cash Flow Statement', fmtDollar);
+            opts.scales.y2 = { ...opts.scales.y, position: 'right', grid: { drawOnChartArea: false } };
+            const chart = new Chart(document.getElementById('cfChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Operating', data: data.cashflow.map(d => d.operating), backgroundColor: c.green },
+                        { label: 'Investing', data: data.cashflow.map(d => d.investing), backgroundColor: c.orange },
+                        { label: 'Financing', data: data.cashflow.map(d => d.financing), backgroundColor: c.blue },
+                        { label: 'FCF', data: fcf, type: 'line', borderColor: c.cyan, backgroundColor: 'transparent', borderWidth: 2, borderDash: [5,3], pointRadius: 4, pointBackgroundColor: c.cyan, yAxisID: 'y2' }
+                    ]
+                },
+                options: opts
+            });
+            activeChartJS.push(chart);
+        }
+
+        function renderGrowthChart(body, data) {
+            if (!data.income || data.income.length < 2) { body.innerHTML = '<div class="chart-nodata">Need 2+ years of data for growth trends</div>'; return; }
+            const c = cjsColors();
+            body.innerHTML = '<div class="chart-wrap"><canvas id="grChart"></canvas></div>';
+            const labels = [], revGr = [], epsGr = [], fcfGr = [];
+            for (let i = 1; i < data.income.length; i++) {
+                labels.push(data.income[i].label);
+                const prev = data.income[i-1], curr = data.income[i];
+                revGr.push(prev.revenue ? ((curr.revenue - prev.revenue) / Math.abs(prev.revenue)) * 100 : null);
+                epsGr.push(prev.eps ? ((curr.eps - prev.eps) / Math.abs(prev.eps)) * 100 : null);
+            }
+            if (data.cashflow && data.cashflow.length >= 2) {
+                for (let i = 1; i < data.cashflow.length; i++) {
+                    const prev = (data.cashflow[i-1].operating||0)+(data.cashflow[i-1].capex||0);
+                    const curr = (data.cashflow[i].operating||0)+(data.cashflow[i].capex||0);
+                    fcfGr.push(prev ? ((curr - prev) / Math.abs(prev)) * 100 : null);
+                }
+            }
+            const chart = new Chart(document.getElementById('grChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Revenue Growth', data: revGr, borderColor: c.blue, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, pointBackgroundColor: c.blue },
+                        { label: 'EPS Growth', data: epsGr, borderColor: c.green, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, pointBackgroundColor: c.green },
+                        ...(fcfGr.length ? [{ label: 'FCF Growth', data: fcfGr, borderColor: c.cyan, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, pointBackgroundColor: c.cyan }] : [])
+                    ]
+                },
+                options: cjsOpts('Year-over-Year Growth', fmtPct)
+            });
+            activeChartJS.push(chart);
+        }
+
+        function renderMarginsChart(body, data) {
+            if (!data.income || !data.income.length) { body.innerHTML = '<div class="chart-nodata">No data for margin analysis</div>'; return; }
+            const c = cjsColors();
+            body.innerHTML = '<div class="chart-wrap"><canvas id="mrChart"></canvas></div>';
+            const labels = data.income.map(d => d.label);
+            const gross = data.income.map(d => d.revenue ? (d.gross_profit / d.revenue) * 100 : null);
+            const op = data.income.map(d => d.revenue ? (d.op_income / d.revenue) * 100 : null);
+            const net = data.income.map(d => d.revenue ? (d.net_income / d.revenue) * 100 : null);
+            const chart = new Chart(document.getElementById('mrChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Gross Margin', data: gross, borderColor: c.green, backgroundColor: 'rgba(34,197,94,0.1)', fill: true, borderWidth: 2, pointRadius: 4, pointBackgroundColor: c.green },
+                        { label: 'Operating Margin', data: op, borderColor: c.blue, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, pointBackgroundColor: c.blue },
+                        { label: 'Net Margin', data: net, borderColor: c.purple, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, pointBackgroundColor: c.purple }
+                    ]
+                },
+                options: cjsOpts('Profit Margins', fmtPct)
+            });
+            activeChartJS.push(chart);
+        }
+
+        function renderAllocationChart(body, data) {
+            if (!data.income || !data.income.length) { body.innerHTML = '<div class="chart-nodata">No data for revenue allocation</div>'; return; }
+            const c = cjsColors();
+            const latest = data.income[data.income.length - 1];
+            if (!latest.revenue || latest.revenue <= 0) { body.innerHTML = '<div class="chart-nodata">No positive revenue to display</div>'; return; }
+            body.innerHTML = '<div class="chart-wrap" style="max-width:500px;margin:0 auto"><canvas id="alChart"></canvas></div>';
+            const cogs = Math.abs(latest.cost_of_revenue || 0);
+            const opex = Math.abs((latest.op_expenses || 0) - (latest.cost_of_revenue || 0));
+            const otherExp = Math.abs((latest.op_income || 0) - (latest.net_income || 0));
+            const netInc = Math.max(latest.net_income || 0, 0);
+            const total = cogs + opex + otherExp + netInc;
+            // Normalize if total doesn't match revenue
+            const items = [
+                { label: 'Cost of Revenue', value: cogs, color: c.red },
+                { label: 'Operating Expenses', value: opex, color: c.orange },
+                { label: 'Other / Tax', value: otherExp, color: c.yellow },
+                { label: 'Net Income', value: netInc, color: c.green }
+            ].filter(i => i.value > 0);
+            const chart = new Chart(document.getElementById('alChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: items.map(i => i.label),
+                    datasets: [{
+                        data: items.map(i => i.value),
+                        backgroundColor: items.map(i => i.color),
+                        borderColor: c.bg, borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: c.text, font: { family: "'JetBrains Mono', monospace", size: 11 }, padding: 12 } },
+                        title: { display: true, text: `Revenue Allocation (${latest.label})`, color: c.text, font: { family: "'Outfit', sans-serif", size: 14, weight: 600 } },
+                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmtDollar(ctx.parsed)} (${((ctx.parsed / latest.revenue) * 100).toFixed(1)}%)` } }
+                    }
+                }
+            });
+            activeChartJS.push(chart);
         }
 
         function fmc(v) { if (!v) return '—'; v = +v; if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`; if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`; if (v >= 1e6) return `$${(v / 1e6).toFixed(0)}M`; return `$${v.toLocaleString()}` }
         function stats() { $('sT').textContent = A.length; $('sH').textContent = A.filter(s => s.markov_state === 'HOT').length; $('sW').textContent = A.filter(s => s.markov_state === 'WARM').length; $('sC').textContent = A.filter(s => s.markov_state === 'COLD').length; $('sF').textContent = A.filter(s => s.markov_state === 'FROZEN').length; $('sK').textContent = A.filter(s => s.is_triple_crown).length }
         function $(id) { return document.getElementById(id) }
-        function toggleTheme() { const b = document.body; b.dataset.theme = b.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('ss-t', b.dataset.theme) } catch (e) { } }
+        function toggleTheme() {
+            const b = document.body; b.dataset.theme = b.dataset.theme === 'dark' ? 'light' : 'dark';
+            try { localStorage.setItem('ss-t', b.dataset.theme) } catch (e) { }
+            // Re-render active chart tab on theme change
+            if (EX) { const tab = document.querySelector('.chart-tab.active'); if (tab) { const s = F.find(x => x.ticker === EX); if (s) switchTab(tab.dataset.tab, EX, s); } }
+        }
         try { const t = localStorage.getItem('ss-t'); if (t) document.body.dataset.theme = t } catch (e) { }
 
         window.addEventListener('scroll', () => { if (RC >= F.length) return; if (window.innerHeight + window.scrollY > document.documentElement.scrollHeight - 500) render() });
