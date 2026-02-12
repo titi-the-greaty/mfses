@@ -375,7 +375,14 @@
 
         .fl {
             font-size: 11px;
-            margin-right: 1px
+            margin-right: 2px;
+            display: inline-flex;
+            vertical-align: middle
+        }
+
+        .fl svg, .mb svg, .st svg {
+            display: inline-block;
+            vertical-align: middle
         }
 
         .dr td {
@@ -719,11 +726,11 @@
         <div style="display:flex;align-items:center;gap:18px;margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
             <div class="st">Stocks: <span class="sv" id="sT">—</span></div>
             <div class="st">Showing: <span class="sv" id="sS">—</span></div>
-            <div class="st">🔥<span class="sv" style="color:var(--red)" id="sH">—</span></div>
-            <div class="st">🌡️<span class="sv" style="color:var(--orange)" id="sW">—</span></div>
-            <div class="st">❄️<span class="sv" style="color:var(--blue)" id="sC">—</span></div>
-            <div class="st">🧊<span class="sv" style="color:var(--text-faint)" id="sF">—</span></div>
-            <div class="st">👑<span class="sv" id="sK">—</span></div>
+            <div class="st" id="siH"></div><div class="st"><span class="sv" style="color:var(--red)" id="sH">—</span></div>
+            <div class="st" id="siW"></div><div class="st"><span class="sv" style="color:var(--orange)" id="sW">—</span></div>
+            <div class="st" id="siC"></div><div class="st"><span class="sv" style="color:var(--blue)" id="sC">—</span></div>
+            <div class="st" id="siF"></div><div class="st"><span class="sv" style="color:var(--text-faint)" id="sF">—</span></div>
+            <div class="st" id="siK"></div><div class="st"><span class="sv" id="sK">—</span></div>
         </div>
     </div>
     <div class="sbar" id="sb">
@@ -750,10 +757,10 @@
             </select></div>
         <div class="tg"><span class="tl">State</span><select class="fsel" id="fSt">
                 <option value="">All</option>
-                <option value="HOT">🔥 HOT</option>
-                <option value="WARM">🌡️ WARM</option>
-                <option value="COLD">❄️ COLD</option>
-                <option value="FROZEN">🧊 FROZEN</option>
+                <option value="HOT">◆ HOT</option>
+                <option value="WARM">◇ WARM</option>
+                <option value="COLD">○ COLD</option>
+                <option value="FROZEN">✦ FROZEN</option>
             </select></div>
         <div class="tg"><span class="tl">Value</span><select class="fsel" id="fVal">
                 <option value="">All</option>
@@ -763,9 +770,9 @@
             </select></div>
         <div class="tg"><span class="tl">Flags</span><select class="fsel" id="fFlg">
                 <option value="">All</option>
-                <option value="t">👑 Triple Crown</option>
-                <option value="v">⚠️ Value Trap</option>
-                <option value="e">🚀 Expensive Growth</option>
+                <option value="t">♛ Triple Crown</option>
+                <option value="v">△ Value Trap</option>
+                <option value="e">⚡ Exp Growth</option>
             </select></div>
         <div class="tg"><span class="tl">Sort</span><select class="fsel" id="srt">
                 <option value="mfses_short-d">Short ↓</option>
@@ -820,6 +827,23 @@
         const SB_URL = 'https://isnuktzlqeeivhbwykxs.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzbnVrdHpscWVlaXZoYnd5a3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODMwODYsImV4cCI6MjA4NTY1OTA4Nn0.3u6IDfRFChaHyQ3yIharGHaVicNjgJAaPvX-vGr2N3Q';
 
+        // ============ SVG ICONS ============
+        function icon(name, size = 14, color = 'currentColor') {
+            const s = `width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
+            const icons = {
+                hot: `<svg ${s}><path d="M12 22c-4.97 0-9-2.69-9-6 0-4 5-11 9-14 4 3 9 10 9 14 0 3.31-4.03 6-9 6z"/><path d="M12 22c-1.66 0-3-1.12-3-2.5 0-2 3-5.5 3-5.5s3 3.5 3 5.5c0 1.38-1.34 2.5-3 2.5z" fill="${color}" opacity="0.3"/></svg>`,
+                warm: `<svg ${s}><path d="M4 10c1.5-1.5 3.5-1.5 5 0s3.5 1.5 5 0 3.5-1.5 5 0"/><path d="M4 16c1.5-1.5 3.5-1.5 5 0s3.5 1.5 5 0 3.5-1.5 5 0"/></svg>`,
+                cold: `<svg ${s}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+                frozen: `<svg ${s}><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"/><circle cx="12" cy="12" r="3" stroke-width="1.5"/></svg>`,
+                crown: `<svg ${s}><path d="M2 20h20L19 8l-4 5-3-7-3 7L5 8z"/><line x1="2" y1="20" x2="22" y2="20" stroke-width="2.5"/></svg>`,
+                warning: `<svg ${s}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r="0.5" fill="${color}"/></svg>`,
+                bolt: `<svg ${s}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+            };
+            return icons[name] || '';
+        }
+        const STATE_ICONS = { HOT: 'hot', WARM: 'warm', COLD: 'cold', FROZEN: 'frozen' };
+        const STATE_COLORS = { HOT: 'var(--red)', WARM: 'var(--orange)', COLD: 'var(--blue)', FROZEN: 'var(--text-faint)' };
+
         let A = [], F = [], S = { c: 'mfses_short', d: 'desc' }, EX = null, RC = 0, BS = 100;
 
         async function load() {
@@ -841,7 +865,7 @@
                 } else { $('hb').textContent = '● No data'; $('hb').style.color = 'var(--text-faint)' }
                 // Also check system_health for pipeline status
                 fetch(`${SB_URL}/rest/v1/system_health?select=*`, { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } }).then(r => r.json()).then(d => { if (d && d[0]) { const h = d[0], b = $('hb'); b.textContent = `● ${h.last_run_status === 'success' ? 'Healthy' : h.last_run_status || '?'}`; b.style.color = h.last_run_status === 'success' ? 'var(--green)' : 'var(--red)'; if (h.last_run_at) { const dt = new Date(h.last_run_at); $('upd').textContent = `Updated: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` } } }).catch(() => { });
-            } catch (e) { $('ldg').innerHTML = `<div style="color:var(--red)">❌ ${e.message}</div><div style="margin-top:8px;font-size:12px;color:var(--text-faint)">Update SB_URL and SB_KEY in index.html</div>` }
+            } catch (e) { $('ldg').innerHTML = `<div style="color:var(--red)">${icon('warning', 16, 'var(--red)')} ${e.message}</div><div style="margin-top:8px;font-size:12px;color:var(--text-faint)">Update SB_URL and SB_KEY in index.html</div>` }
         }
 
         function af() {
@@ -867,13 +891,14 @@
         function mkr(s) {
             const tr = document.createElement('tr'); tr.onclick = () => togD(s.ticker, tr);
             const p = s.price ? `$${(+s.price).toFixed(2)}` : '—'; const ch = s.price_change_pct != null ? (+s.price_change_pct).toFixed(2) : '—'; const cc = +s.price_change_pct > 0 ? 'up' : +s.price_change_pct < 0 ? 'dn' : '';
-            const em = { HOT: '🔥', WARM: '🌡️', COLD: '❄️', FROZEN: '🧊' }, mc = { HOT: 'mh', WARM: 'mw', COLD: 'mc', FROZEN: 'mf' }, ms = s.markov_state || 'COLD';
+            const mc = { HOT: 'mh', WARM: 'mw', COLD: 'mc', FROZEN: 'mf' }, ms = s.markov_state || 'COLD';
+            const si = icon(STATE_ICONS[ms], 12, STATE_COLORS[ms]);
             const us = s.graham_upside_pct != null ? (+s.graham_upside_pct).toFixed(1) + '%' : '—', uc = +s.graham_upside_pct > 0 ? 'up' : +s.graham_upside_pct < 0 ? 'dn' : 'nu';
             const dy = s.dividend_yield ? (+s.dividend_yield).toFixed(2) + '%' : '—';
-            let fl = ''; if (s.is_triple_crown) fl += '<span class="fl" title="Triple Crown">👑</span>'; if (s.is_value_trap) fl += '<span class="fl" title="Value Trap">⚠️</span>'; if (s.is_expensive_growth) fl += '<span class="fl" title="Exp Growth">🚀</span>';
+            let fl = ''; if (s.is_triple_crown) fl += `<span class="fl" title="Triple Crown">${icon('crown', 11, 'var(--yellow)')}</span>`; if (s.is_value_trap) fl += `<span class="fl" title="Value Trap">${icon('warning', 11, 'var(--red)')}</span>`; if (s.is_expensive_growth) fl += `<span class="fl" title="Exp Growth">${icon('bolt', 11, 'var(--accent)')}</span>`;
             tr.innerHTML = `<td><div class="tk">${fl}${s.ticker}</div><div class="tn">${s.company_name || ''}</div></td>
 <td style="font-family:var(--mono);font-size:12px">${p}</td><td class="${cc}" style="font-family:var(--mono);font-size:12px">${ch}%</td>
-<td><span class="mb ${mc[ms]}">${em[ms]} ${ms}</span></td>
+<td><span class="mb ${mc[ms]}">${si} ${ms}</span></td>
 <td>${sc(s.moat_score, '--accent')}</td><td>${sc(s.growth_score, '--accent2')}</td><td>${sc(s.balance_score, '--green')}</td><td>${sc(s.valuation_score, '--orange')}</td><td>${sc(s.sentiment_score, '--pink')}</td><td>${sc(s.dividend_score, '--yellow')}</td>
 <td><span class="cp" style="color:${tc(s.total_score)}">${s.total_score ?? '—'}</span></td>
 <td><span class="cp" style="color:${cc2(s.mfses_short)}">${s.mfses_short != null ? (+s.mfses_short).toFixed(1) : '—'}</span></td>
@@ -1365,6 +1390,13 @@
         const MC_STEPS = [0, 1e8, 1e9, 1e10, 1e11, 5e11], MC_LABELS = ['All', '$100M+', '$1B+', '$10B+', '$100B+', '$500B+'];
         $('mcSlider').addEventListener('input', e => { const v = +e.target.value; $('mcL').textContent = MC_LABELS[v]; af() });
         document.querySelectorAll('th[data-c]').forEach(t => t.addEventListener('click', () => setS(t.dataset.c)));
+
+        // Inject toolbar SVG icons
+        $('siH').innerHTML = icon('hot', 13, 'var(--red)');
+        $('siW').innerHTML = icon('warm', 13, 'var(--orange)');
+        $('siC').innerHTML = icon('cold', 13, 'var(--blue)');
+        $('siF').innerHTML = icon('frozen', 13, 'var(--text-faint)');
+        $('siK').innerHTML = icon('crown', 13, 'var(--yellow)');
 
         load();
     </script>
