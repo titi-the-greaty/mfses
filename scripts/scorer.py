@@ -2,7 +2,7 @@
 SeeSaw MFSES â Scorer v2 (Step 3 of Pipeline)
 ==============================================
 NEW FORMULAS:
-- Moat = (Market Cap score Ã 0.5) + (Analyst Rating score Ã 0.5)
+- Moat = (Market Cap score Ã 0.67) + (Analyst Rating score Ã 0.33)
 - Growth = (EPS Growth score Ã 0.66) + (OBV Trend score Ã 0.33)
 - Balance = Same (D/E ratio)
 - Valuation = Bond-adjusted Graham: (EPS Ã (8.5 + 2g) Ã 4.4) / Y
@@ -15,7 +15,11 @@ Reads from Supabase stock_raw_data, writes to stock_scores.
 import os
 import json
 from datetime import datetime, timezone
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Load .env from parent directory
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # ============================================================
 # CONFIG

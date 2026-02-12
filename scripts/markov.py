@@ -13,7 +13,11 @@ Also: Daily 6AM ET full refresh (overrides Markov, updates all 2,501)
 import os
 import json
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Load .env from parent directory
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # ============================================================
 # CONFIG
@@ -53,10 +57,6 @@ TRANSITIONS = {
     "price_swing_large":    {"threshold": 5.0, "boost": 0.30, "target": "HOT",    "reason": "price_swing_5pct"},
     "price_swing_moderate": {"threshold": 3.0, "boost": 0.20, "target": "HOT",    "reason": "price_swing_3pct"},
     "price_flat":           {"threshold": 0.5, "boost": 0.10, "target": "COLD",   "reason": "price_flat"},
-    
-    # News-based triggers
-    "news_burst":           {"threshold": 3,   "boost": 0.25, "target": "HOT",    "reason": "news_burst_3plus"},
-    "news_activity":        {"threshold": 1,   "boost": 0.10, "target": "WARM",   "reason": "news_activity"},
     
     # Score change triggers
     "score_jump":           {"threshold": 5,   "boost": 0.25, "target": "HOT",    "reason": "mfses_score_jump"},
@@ -113,7 +113,7 @@ def evaluate_transitions(supabase: Client, tickers: list[str]) -> dict:
     
     # Fetch raw data for these tickers
     result = supabase.table("stock_raw_data") \
-        .select("ticker, volume_ratio, price_change_pct, news_count_1h") \
+        .select("ticker, volume_ratio, price_change_pct") \
         .in_("ticker", tickers) \
         .execute()
     
@@ -133,15 +133,14 @@ def evaluate_transitions(supabase: Client, tickers: list[str]) -> dict:
         
         volume_ratio = stock.get("volume_ratio") or 1.0
         price_change = abs(stock.get("price_change_pct") or 0)
-        news_count = stock.get("news_count_1h") or 0
-        
+
         # Calculate transition probabilities
         hot_prob = 0.0
         warm_prob = 0.0
         cold_prob = 0.0
         frozen_prob = 0.0
         best_reason = None
-        
+
         # --- Volume signals ---
         if volume_ratio > 3.0:
             hot_prob += 0.40
@@ -157,7 +156,7 @@ def evaluate_transitions(supabase: Client, tickers: list[str]) -> dict:
             frozen_prob += 0.20
             if not best_reason:
                 best_reason = "low_volume"
-        
+
         # --- Price signals ---
         if price_change > 5.0:
             hot_prob += 0.30
@@ -167,14 +166,6 @@ def evaluate_transitions(supabase: Client, tickers: list[str]) -> dict:
             best_reason = best_reason or "price_swing_3pct"
         elif price_change < 0.5:
             cold_prob += 0.10
-        
-        # --- News signals ---
-        if news_count >= 3:
-            hot_prob += 0.25
-            best_reason = best_reason or "news_burst"
-        elif news_count >= 1:
-            warm_prob += 0.10
-            best_reason = best_reason or "news_activity"
         
         # --- Determine new state ---
         new_state = _resolve_new_state(

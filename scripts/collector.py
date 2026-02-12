@@ -18,7 +18,11 @@ import time
 import math
 import requests
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Load .env from parent directory
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # ============================================================
 # CONFIG
@@ -269,15 +273,8 @@ def fetch_analyst_ratings(ticker: str) -> dict:
     Fetch analyst ratings from Polygon.
     Returns consensus rating (1-5 scale: 1=strong sell, 5=strong buy)
     """
-    url = f"{POLYGON_BASE}/v2/reference/news"
-    params = {
-        "ticker": ticker,
-        "limit": 1,
-    }
-
-    # Polygon's analyst ratings endpoint
-    ratings_url = f"{POLYGON_BASE}/v3/reference/tickers/{ticker}"
-    data = _api_get(ratings_url)
+    url = f"{POLYGON_BASE}/v3/reference/tickers/{ticker}"
+    data = _api_get(url)
 
     result = {}
 

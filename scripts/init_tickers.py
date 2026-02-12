@@ -217,12 +217,7 @@ def classify_tier(market_cap: int | None) -> int:
     """Assign tier based on market cap."""
     if not market_cap or market_cap <= 0:
         return 4  # Default to small cap
-    
-    for tier, threshold in sorted(TIER_THRESHOLDS.items()):
-        if market_cap >= threshold:
-            best_tier = tier
-    
-    # Re-check in order (largest first)
+
     if market_cap >= TIER_THRESHOLDS[1]:
         return 1
     elif market_cap >= TIER_THRESHOLDS[2]:
