@@ -560,8 +560,8 @@
 
 <body data-theme="dark">
     <div class="header">
-        <div class="logo"><span>SEE</span><span>SAW</span><span
-                style="font-weight:300;font-size:14px;color:var(--text-dim);margin-left:8px">MFSES</span></div>
+        <div class="logo"><span>SEE</span><span>SAW</span><svg class="seesaw-icon" width="32" height="11" viewBox="0 0 100 35" fill="var(--accent)" style="margin-left:6px;margin-right:2px;vertical-align:middle"><polygon points="5,0 40,11 40,22 5,19"/><polygon points="60,13 95,16 95,35 60,24"/><circle cx="50" cy="17" r="6"/></svg><span
+                style="font-weight:300;font-size:14px;color:var(--text-dim);margin-left:4px">MFSES</span></div>
         <div class="header-r">
             <div class="hbadge" id="upd" style="background:rgba(34,211,238,.1);color:var(--text-dim)">Updated: —</div>
             <div class="hbadge" id="hb">● Loading...</div><button class="tbtn" onclick="toggleTheme()">◐</button>
@@ -680,6 +680,19 @@
                 const r = await fetch(`${SB_URL}/rest/v1/dashboard_stocks?select=*&order=mfses_short.desc.nullslast`, { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Range': '0-2999' } });
                 if (!r.ok) throw new Error(`HTTP ${r.status}`); A = await r.json();
                 $('ldg').style.display = 'none'; $('tbl').style.display = ''; stats(); af();
+                // Show data freshness from stock data itself
+                const latest = A.reduce((best, s) => {
+                    const t = s.scored_at || s.collected_at;
+                    return t && (!best || t > best) ? t : best;
+                }, null);
+                if (latest) {
+                    const dt = new Date(latest); $('upd').textContent = `Updated: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+                    const ageH = (Date.now() - dt.getTime()) / 3.6e6, b = $('hb');
+                    if (ageH < 1) { b.textContent = '● Live'; b.style.color = 'var(--green)' }
+                    else if (ageH < 24) { b.textContent = `● ${Math.floor(ageH)}h ago`; b.style.color = 'var(--yellow)' }
+                    else { b.textContent = `● ${Math.floor(ageH / 24)}d old`; b.style.color = 'var(--orange)' }
+                } else { $('hb').textContent = '● No data'; $('hb').style.color = 'var(--text-faint)' }
+                // Also check system_health for pipeline status
                 fetch(`${SB_URL}/rest/v1/system_health?select=*`, { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } }).then(r => r.json()).then(d => { if (d && d[0]) { const h = d[0], b = $('hb'); b.textContent = `● ${h.last_run_status === 'success' ? 'Healthy' : h.last_run_status || '?'}`; b.style.color = h.last_run_status === 'success' ? 'var(--green)' : 'var(--red)'; if (h.last_run_at) { const dt = new Date(h.last_run_at); $('upd').textContent = `Updated: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` } } }).catch(() => { });
             } catch (e) { $('ldg').innerHTML = `<div style="color:var(--red)">❌ ${e.message}</div><div style="margin-top:8px;font-size:12px;color:var(--text-faint)">Update SB_URL and SB_KEY in index.html</div>` }
         }

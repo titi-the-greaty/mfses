@@ -94,11 +94,14 @@ def get_tickers_due(supabase: Client, force_all: bool = False) -> list[dict]:
     
     # Normal cycle — only get tickers that are due
     now = datetime.now(timezone.utc).isoformat()
-    result = supabase.rpc("get_tickers_due_for_update").execute()
-    
-    # Respect max per cycle
-    tickers = result.data[:MAX_TICKERS_PER_CYCLE] if result.data else []
-    return tickers
+    result = supabase.table("stock_states") \
+        .select("ticker, current_state, last_updated") \
+        .lte("next_update_due", now) \
+        .order("next_update_due") \
+        .limit(MAX_TICKERS_PER_CYCLE) \
+        .execute()
+
+    return result.data if result.data else []
 
 
 def evaluate_transitions(supabase: Client, tickers: list[str]) -> dict:
@@ -284,11 +287,16 @@ def apply_transitions(supabase: Client, transitions: dict) -> tuple[int, int]:
             elif new_priority < old_priority:
                 demotions += 1
         
-        # Use our DB function to update state + calculate next_update_due
-        supabase.rpc("update_markov_state", {
-            "p_ticker": ticker,
-            "p_new_state": new_state,
-            "p_reason": reason,
+        # Update state + calculate next_update_due
+        interval_min = STATE_INTERVALS.get(new_state, 360)
+        now = datetime.now(timezone.utc)
+        supabase.table("stock_states").upsert({
+            "ticker": ticker,
+            "current_state": new_state,
+            "promotion_reason": reason,
+            "last_updated": now.isoformat(),
+            "next_update_due": (now + timedelta(minutes=interval_min)).isoformat(),
+            "consecutive_hot": (state_info.get("consecutive_hot", 0) + 1) if new_state == "HOT" else 0,
         }).execute()
     
     return promotions, demotions
