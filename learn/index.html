@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEESAW MFSES — Metrics Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #111118;
+  --bg3: #1a1a24;
+  --bg4: #22222e;
+  --border: #2a2a3a;
+  --border-hover: #3a3a5a;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --text-muted: #555568;
+  --accent: #6c5ce7;
+  --accent-glow: rgba(108, 92, 231, 0.15);
+  --hot: #ff6b6b;
+  --warm: #ffa94d;
+  --cold: #74c0fc;
+  --frozen: #b197fc;
+  --green: #51cf66;
+  --yellow: #ffd43b;
+  --cyan: #22b8cf;
+  --pink: #f06595;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── HERO ─── */
+.hero {
+  position: relative;
+  padding: 48px 40px 32px;
+  text-align: center;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, rgba(108,92,231,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 520px;
+  margin: 16px auto 0;
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* ─── NAV PILLS ─── */
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.nav-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  scrollbar-width: none;
+}
+.nav-pills::-webkit-scrollbar { display: none; }
+.nav-pill {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.nav-pill:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+.nav-pill.active {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ─── MAIN CONTENT ─── */
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px 120px;
+}
+
+/* ─── SECTION ─── */
+.section {
+  margin-bottom: 32px;
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+.section-header:hover {
+  border-color: var(--border-hover);
+  background: var(--bg3);
+}
+.section-title {
+  flex: 1;
+}
+.section-title h2 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.section-title .count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 2px;
+}
+.section-chevron {
+  font-size: 18px;
+  color: var(--text-muted);
+  transition: transform 0.3s;
+}
+.section.open .section-chevron {
+  transform: rotate(180deg);
+}
+.section-body {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.section.open .section-body {
+  max-height: 8000px;
+}
+
+/* ─── METRIC CARD ─── */
+.metric {
+  border-bottom: 1px solid var(--border);
+}
+.metric:last-child { border-bottom: none; }
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  cursor: pointer;
+  background: var(--bg2);
+  transition: all 0.15s;
+}
+.metric-header:hover {
+  background: var(--bg3);
+}
+.metric-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.metric-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+}
+.metric-brief {
+  font-size: 13px;
+  color: var(--text-dim);
+  display: none;
+}
+@media (min-width: 640px) {
+  .metric-brief { display: block; }
+}
+.metric-chevron {
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: transform 0.25s;
+  flex-shrink: 0;
+}
+.metric.open .metric-chevron {
+  transform: rotate(180deg);
+}
+
+/* ─── METRIC DETAIL ─── */
+.metric-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--bg);
+}
+.metric.open .metric-detail {
+  max-height: 3000px;
+}
+.metric-content {
+  padding: 20px 24px 24px;
+}
+
+/* Detail layers */
+.detail-layer {
+  margin-bottom: 16px;
+}
+.detail-layer:last-child { margin-bottom: 0; }
+
+.layer-label {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.layer-label::before {
+  content: '';
+  width: 8px; height: 1px;
+  background: var(--text-muted);
+}
+
+.explain-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+.explain-text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Formula box */
+.formula-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--cyan);
+  overflow-x: auto;
+}
+
+/* Links / Resources */
+.resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.res-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.res-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+.res-link .res-icon {
+  font-size: 14px;
+}
+
+/* Divider */
+.detail-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+/* ─── COLOR CODING ─── */
+.tag-table { background: rgba(108,92,231,0.15); color: #a89aec; }
+.tag-filter { background: rgba(255,169,77,0.15); color: #ffa94d; }
+.tag-dividend { background: rgba(81,207,102,0.15); color: #51cf66; }
+.tag-market { background: rgba(34,184,207,0.15); color: #22b8cf; }
+.tag-technical { background: rgba(240,101,149,0.15); color: #f06595; }
+.tag-fundamental { background: rgba(255,212,59,0.15); color: #ffd43b; }
+.tag-scoring { background: rgba(177,151,252,0.15); color: #b197fc; }
+
+/* ─── SEARCH ─── */
+.search-wrap {
+  max-width: 900px;
+  margin: 0 auto 32px;
+  padding: 0 20px;
+}
+.search-box {
+  width: 100%;
+  padding: 14px 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-box::placeholder { color: var(--text-muted); }
+.search-box:focus { border-color: var(--accent); }
+
+/* ─── PROGRESS BAR ─── */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--pink));
+  z-index: 200;
+  transition: width 0.3s;
+}
+
+/* ─── FOOTER ─── */
+.footer {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+  max-width: 900px;
+  margin: 0 auto;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 640px) {
+  .hero { padding: 50px 20px 40px; }
+  .hero h1 { letter-spacing: -1px; }
+  .hero-stats { gap: 24px; }
+  .section-header { padding: 14px 16px; }
+  .metric-header { padding: 12px 16px; }
+  .metric-content { padding: 16px; }
+  .nav-pill { font-size: 12px; padding: 6px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">SEESAW MFSES</div>
+  <p>Every metric on the SEESAW dashboard explained. Click any topic to go deeper.</p>
+</div>
+
+<!-- NAV -->
+<div class="nav-wrap">
+  <div class="nav-pills" id="navPills">
+    <div class="nav-pill active" data-target="all">All</div>
+    <div class="nav-pill" data-target="table">Table Columns</div>
+    <div class="nav-pill" data-target="filter">Filters</div>
+    <div class="nav-pill" data-target="dividend">Dividend</div>
+    <div class="nav-pill" data-target="market">Market Data</div>
+    <div class="nav-pill" data-target="technical">Technical</div>
+    <div class="nav-pill" data-target="fundamental">Fundamentals</div>
+    <div class="nav-pill" data-target="scoring">Scoring</div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+    <input type="text" class="search-box" id="searchBox" placeholder="Search metrics...">
+</div>
+
+<!-- MAIN -->
+<div class="main" id="mainContent">
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- SECTION 1: TABLE COLUMNS -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="section open" data-category="table" id="sec-table">
+    <div class="section-header" onclick="toggleSection(this)">
+      
+      <div class="section-title">
+        <h2>Table Columns</h2>
+        <div class="count">16 metrics — what you see for every stock</div>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <!-- Ticker -->
+      <div class="metric" data-search="ticker symbol stock company name">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">TKR</span>
+          <span class="metric-name">Ticker</span>
+          <span class="metric-brief">Stock symbol & company name</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">A <strong>ticker symbol</strong> is the short abbreviation used to uniquely identify a publicly traded company on a stock exchange. For example, <strong>AAPL</strong> = Apple Inc., <strong>MSFT</strong> = Microsoft Corp. These are assigned by the exchange (NYSE or NASDAQ) when a company goes public via an IPO.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">On SEESAW</div>
+            <div class="explain-text">The ticker column shows both the <strong>symbol</strong> and <strong>full company name</strong>. Clicking a ticker opens the detailed stock view with all sub-metrics.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Ticker_symbol" target="_blank" class="res-link">wiki Wikipedia: Ticker Symbol</a>
+              <a href="https://www.youtube.com/watch?v=p7HKvqRI_Bo" target="_blank" class="res-link">video How the Stock Market Works</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Price -->
+      <div class="metric" data-search="price share current stock quote">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">PRC</span>
+          <span class="metric-name">Price</span>
+          <span class="metric-brief">Current share price</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">The <strong>current market price</strong> of one share of stock. This is the last traded price on the exchange and fluctuates throughout the trading day based on supply and demand. It reflects what buyers are willing to pay and what sellers are willing to accept.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Why it matters</div>
+            <div class="explain-text">Price alone doesn't tell you if a stock is "cheap" or "expensive" — a $500 stock can be undervalued while a $10 stock can be overvalued. That's why SEESAW pairs price with <strong>valuation metrics</strong> like P/E, Graham Number, and Upside %.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Share_price" target="_blank" class="res-link">wiki Wikipedia: Share Price</a>
+              <a href="https://www.youtube.com/watch?v=ZCFkWDdmXG8" target="_blank" class="res-link">video Khan Academy: Stock Prices</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Chg% -->
+      <div class="metric" data-search="change percent daily movement chg">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">CHG%</span>
+          <span class="metric-name">Daily Change %</span>
+          <span class="metric-brief">Today's price movement</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">The <strong>percentage change</strong> in stock price from yesterday's close to the current price. A positive number (green) means the stock is up today; negative (red) means it's down.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Formula</div>
+            <div class="formula-box">Chg% = ((Current Price − Previous Close) / Previous Close) × 100</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Rate_of_return" target="_blank" class="res-link">wiki Wikipedia: Rate of Return</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- State -->
+      <div class="metric" data-search="state hot warm cold frozen composite health">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">STATE</span>
+          <span class="metric-name">State</span>
+          <span class="metric-brief">HOT / WARM / COLD / FROZEN</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">A SEESAW-proprietary <strong>composite health rating</strong> that distills all 6 factor scores into one intuitive label: HOT (strong across the board), WARM (mostly positive), COLD (mixed or weak), FROZEN (poor fundamentals or outlook).</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">How it works</div>
+            <div class="explain-text">The state is derived from the <strong>Total Score</strong> — the sum of all six factor scores (Moat, Growth, Balance, Value, Sentiment, Dividend). Score thresholds determine which state label a stock receives. Higher total scores → hotter state.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Fundamental_analysis" target="_blank" class="res-link">wiki Wikipedia: Fundamental Analysis</a>
+              <a href="https://www.youtube.com/watch?v=KfDB9e_cO4k" target="_blank" class="res-link">video How to Analyze Stocks</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Moat -->
+      <div class="metric" data-search="moat competitive advantage roe roic margins brand">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">MOAT</span>
+          <span class="metric-name">Moat Score</span>
+          <span class="metric-brief">Competitive advantage strength</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">Inspired by Warren Buffett's concept of an <strong>economic moat</strong> — a company's ability to maintain competitive advantages over rivals and protect long-term profits. Think of it as a castle's moat: the wider it is, the harder it is for competitors to attack.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">What feeds the score</div>
+            <div class="explain-text"><strong>Return on Equity (ROE)</strong> — how efficiently a company uses shareholder money. <strong>Return on Invested Capital (ROIC)</strong> — profitability relative to total capital. <strong>Profit margins</strong> — how much of each dollar of revenue becomes profit. <strong>Market dominance</strong> — brand strength and market share.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Economic_moat" target="_blank" class="res-link">wiki Wikipedia: Economic Moat</a>
+              <a href="https://www.youtube.com/watch?v=iWMKpDLPJlA" target="_blank" class="res-link">video Buffett Explains Moats</a>
+              <a href="https://www.youtube.com/watch?v=zNjLg2Hk4JI" target="_blank" class="res-link">video Understanding ROE & ROIC</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Growth -->
+      <div class="metric" data-search="growth revenue earnings eps forward estimates grw">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">GRW</span>
+          <span class="metric-name">Growth Score</span>
+          <span class="metric-brief">Revenue & earnings growth quality</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">Measures how fast a company is <strong>increasing its revenue and earnings</strong> over time. High-growth companies are expanding rapidly; low-growth or negative-growth companies are stagnating or shrinking.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">What feeds the score</div>
+            <div class="explain-text"><strong>Revenue growth rate</strong> (year-over-year), <strong>EPS growth</strong> (earnings per share trajectory), <strong>forward estimates</strong> (what analysts project), and <strong>consistency</strong> of growth across multiple quarters.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Growth_investing" target="_blank" class="res-link">wiki Wikipedia: Growth Investing</a>
+              <a href="https://www.youtube.com/watch?v=4yrn7YqGRs8" target="_blank" class="res-link">video Revenue vs Earnings Growth</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Balance -->
+      <div class="metric" data-search="balance sheet debt equity current ratio free cash flow health bal">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">BAL</span>
+          <span class="metric-name">Balance Score</span>
+          <span class="metric-brief">Balance sheet health</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">Evaluates a company's <strong>financial health and stability</strong>. A strong balance sheet means the company can weather downturns, invest in growth, and meet its obligations. A weak balance sheet means the company is overleveraged or cash-strapped.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">What feeds the score</div>
+            <div class="explain-text"><strong>Debt-to-Equity ratio</strong> — how much debt vs. shareholder equity. <strong>Current Ratio</strong> — can it pay short-term bills? <strong>Interest Coverage</strong> — can it service its debt? <strong>Free Cash Flow</strong> — cash left after all expenses and investments.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Balance_sheet" target="_blank" class="res-link">wiki Wikipedia: Balance Sheet</a>
+              <a href="https://www.youtube.com/watch?v=WEDIj9JBTC8" target="_blank" class="res-link">video How to Read a Balance Sheet</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Value -->
+      <div class="metric" data-search="value valuation pe pb peg graham dcf intrinsic val">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">VAL</span>
+          <span class="metric-name">Value Score</span>
+          <span class="metric-brief">Valuation attractiveness</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">Determines whether a stock is <strong>undervalued, fairly valued, or overvalued</strong> relative to its fundamentals. Uses multiple valuation models to triangulate a fair price — if the stock trades significantly below that price, there may be an opportunity.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">What feeds the score</div>
+            <div class="explain-text"><strong>P/E Ratio</strong> — price relative to earnings. <strong>P/B Ratio</strong> — price relative to book value. <strong>PEG Ratio</strong> — P/E adjusted for growth. <strong>Graham Number</strong> — Ben Graham's intrinsic value formula. <strong>DCF</strong> — discounted cash flow model. <strong>Bond-adjusted valuation</strong> — comparing equity returns to bond yields.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Value_investing" target="_blank" class="res-link">wiki Wikipedia: Value Investing</a>
+              <a href="https://www.youtube.com/watch?v=znmQ7oMiQrM" target="_blank" class="res-link">video How to Value a Stock</a>
+              <a href="https://en.wikipedia.org/wiki/Discounted_cash_flow" target="_blank" class="res-link">wiki Wikipedia: DCF</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Sentiment -->
+      <div class="metric" data-search="sentiment analyst ratings price target newsiq institutional flow sen">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">SEN</span>
+          <span class="metric-name">Sentiment Score</span>
+          <span class="metric-brief">Market & analyst sentiment</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">Captures the <strong>overall mood and outlook</strong> that analysts, institutions, and the market have toward a stock. Combines quantitative data (analyst ratings, price targets) with qualitative signals (news sentiment, institutional buying/selling).</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">What feeds the score</div>
+            <div class="explain-text"><strong>Analyst consensus</strong> — buy/hold/sell ratings. <strong>Price targets</strong> — where analysts think the stock is headed. <strong>NewsIQ</strong> — AI-powered sentiment analysis of recent news. <strong>Institutional flow</strong> (WhaleWatch) — are big money managers buying or selling?</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Market_sentiment" target="_blank" class="res-link">wiki Wikipedia: Market Sentiment</a>
+              <a href="https://www.youtube.com/watch?v=Lhf_2gJJS1I" target="_blank" class="res-link">video Understanding Analyst Ratings</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Dividend -->
+      <div class="metric" data-search="dividend yield payout sustainability income div">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">DIV</span>
+          <span class="metric-name">Dividend Score</span>
+          <span class="metric-brief">Dividend quality & sustainability</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">Rates the <strong>quality and reliability of a company's dividend</strong>. A high score means generous, sustainable, growing dividends. A low score means the dividend is small, unreliable, or non-existent.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">What feeds the score</div>
+            <div class="explain-text"><strong>Dividend yield</strong>, <strong>payout ratio</strong> (what % of earnings goes to dividends), <strong>5-year growth rate</strong>, and <strong>consecutive years</strong> of increases (dividend aristocrat status).</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Dividend" target="_blank" class="res-link">wiki Wikipedia: Dividends</a>
+              <a href="https://www.youtube.com/watch?v=saq4ls_Bqcs" target="_blank" class="res-link">video Dividend Investing Explained</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Total -->
+      <div class="metric" data-search="total score composite sum overall tot">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">TOT</span>
+          <span class="metric-name">Total Score</span>
+          <span class="metric-brief">Sum of all 6 factor scores</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">The <strong>aggregate of all six factor scores</strong> (Moat + Growth + Balance + Value + Sentiment + Dividend). This single number gives you a holistic view of a stock's quality across every dimension SEESAW tracks.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Formula</div>
+            <div class="formula-box">Total = Moat + Growth + Balance + Value + Sentiment + Dividend</div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Short/Mid/Long -->
+      <div class="metric" data-search="short mid long term horizon outlook time weighted">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">S/M/L</span>
+          <span class="metric-name">Short / Mid / Long Term</span>
+          <span class="metric-brief">Time-horizon outlook scores</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What they are</div>
+            <div class="explain-text">Three separate scores that weight the 6 factors differently depending on time horizon. <strong>Short-term</strong> emphasizes momentum, sentiment, and technicals. <strong>Mid-term</strong> balances growth with valuation. <strong>Long-term</strong> prioritizes moat, balance sheet strength, and dividend sustainability.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Why it matters</div>
+            <div class="explain-text">A stock can be great for long-term holders but terrible for short-term traders, or vice versa. These scores help you match stocks to <strong>your investment timeline</strong>.</div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Upside -->
+      <div class="metric" data-search="upside intrinsic value gap graham dcf undervalued">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">UPS</span>
+          <span class="metric-name">Upside %</span>
+          <span class="metric-brief">Gap to estimated intrinsic value</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">The <strong>percentage difference</strong> between the current market price and SEESAW's estimated intrinsic value (using Graham/DCF models). A positive upside means the stock is potentially undervalued; negative means potentially overvalued.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Formula</div>
+            <div class="formula-box">Upside% = ((Intrinsic Value − Current Price) / Current Price) × 100</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Intrinsic_value_(finance)" target="_blank" class="res-link">wiki Wikipedia: Intrinsic Value</a>
+              <a href="https://en.wikipedia.org/wiki/Benjamin_Graham_formula" target="_blank" class="res-link">wiki Wikipedia: Graham Formula</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Yield (table) -->
+      <div class="metric" data-search="yield dividend annual percentage income">
+        <div class="metric-header" onclick="toggleMetric(this)">
+          <span class="metric-tag tag-table">YLD</span>
+          <span class="metric-name">Yield</span>
+          <span class="metric-brief">Annual dividend yield %</span>
+          <span class="metric-chevron">▾</span>
+        </div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer">
+            <div class="layer-label">What it is</div>
+            <div class="explain-text">The <strong>annual dividend payment as a percentage of the stock price</strong>. If a stock costs $100 and pays $3/year in dividends, the yield is 3%. Higher yield = more income per dollar invested.</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Formula</div>
+            <div class="formula-box">Yield = (Annual Dividend per Share / Current Price) × 100</div>
+          </div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer">
+            <div class="layer-label">Learn More</div>
+            <div class="resources">
+              <a href="https://en.wikipedia.org/wiki/Dividend_yield" target="_blank" class="res-link">wiki Wikipedia: Dividend Yield</a>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- SECTION 2: FILTERS -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="section" data-category="filter" id="sec-filter">
+    <div class="section-header" onclick="toggleSection(this)">
+      
+      <div class="section-title">
+        <h2>Filters & Classifications</h2>
+        <div class="count">7 filters — slice the data your way</div>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="metric" data-search="sector gics technology healthcare financials energy">
+        <div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-filter">SEC</span><span class="metric-name">Sector</span><span class="metric-brief">11 GICS industry sectors</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Stocks are classified into <strong>11 sectors</strong> under the GICS (Global Industry Classification Standard): Technology, Healthcare, Financials, Consumer Discretionary, Consumer Staples, Energy, Industrials, Utilities, Communication Services, Real Estate, and Materials. This helps you diversify and compare companies within similar industries.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Global_Industry_Classification_Standard" target="_blank" class="res-link">wiki Wikipedia: GICS</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="tier mega large mid small cap size market capitalization">
+        <div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-filter">TIER</span><span class="metric-name">Tier (Market Cap Size)</span><span class="metric-brief">Mega / Large / Mid / Small</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Companies are grouped by total market value. <strong>Mega-cap</strong> ($200B+) — Apple, Microsoft. <strong>Large-cap</strong> ($10B–$200B) — established companies. <strong>Mid-cap</strong> ($2B–$10B) — growth potential with moderate risk. <strong>Small-cap</strong> (&lt;$2B) — higher risk, higher potential reward.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Market_capitalization" target="_blank" class="res-link">wiki Wikipedia: Market Cap</a><a href="https://www.youtube.com/watch?v=UQRMh4M3VJE" target="_blank" class="res-link">video Market Cap Explained</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="value under fair over valued valuation filter">
+        <div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-filter">VAL</span><span class="metric-name">Value Filter</span><span class="metric-brief">Under / Fair / Over valued</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Filters stocks by their valuation gap. <strong>Under (&gt;20%↑)</strong> — stock trades more than 20% below estimated intrinsic value. <strong>Fair (±10%)</strong> — price is close to fair value. <strong>Over (&gt;20%↓)</strong> — stock trades more than 20% above intrinsic value.</div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="flags triple crown value trap expensive growth">
+        <div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-filter">FLG</span><span class="metric-name">Flags</span><span class="metric-brief">Triple Crown / Value Trap / Expensive Growth</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What they are</div><div class="explain-text">Special labels that highlight noteworthy patterns: Triple Crown — high scores across all three time horizons (short, mid, long). Value Trap — looks cheap on paper but fundamentals are deteriorating. Expensive Growth — strong growth but the market has priced it in (overvalued).</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Why they matter</div><div class="explain-text">Flags are <strong>warning and opportunity signals</strong>. Triple Crowns are rare and indicate all-around quality. Value Traps warn you not to be fooled by a low P/E. Expensive Growth reminds you that great companies can still be bad investments if you overpay.</div></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- SECTION 3: DIVIDEND DEEP DIVE -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="section" data-category="dividend" id="sec-dividend">
+    <div class="section-header" onclick="toggleSection(this)">
+      
+      <div class="section-title">
+        <h2>Dividend Deep Dive</h2>
+        <div class="count">6 metrics — income investing essentials</div>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="metric" data-search="eps earnings per share profit net income"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-dividend">EPS</span><span class="metric-name">Earnings Per Share (EPS)</span><span class="metric-brief">Profit per share of stock</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The company's <strong>net profit divided by the number of outstanding shares</strong>. EPS tells you how much money a company earns for each share you own. It's the foundation of most valuation metrics like P/E ratio.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">EPS = Net Income / Shares Outstanding</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Earnings_per_share" target="_blank" class="res-link">wiki Wikipedia: EPS</a><a href="https://www.youtube.com/watch?v=hrleM2lJ4ew" target="_blank" class="res-link">video EPS Explained Simply</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="payout ratio dividend earnings sustainable"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-dividend">PAY</span><span class="metric-name">Payout Ratio</span><span class="metric-brief">% of earnings paid as dividends</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The <strong>percentage of a company's earnings</strong> that go toward paying dividends. A 40% payout means the company pays out 40 cents of every dollar earned and keeps 60 cents for reinvestment. Too high (&gt;80%) can signal the dividend is unsustainable.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">Payout Ratio = (Dividends per Share / EPS) × 100</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Dividend_payout_ratio" target="_blank" class="res-link">wiki Wikipedia: Payout Ratio</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="5 year five growth dividend increase rate"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-dividend">5YG</span><span class="metric-name">5-Year Dividend Growth</span><span class="metric-brief">Average annual dividend increase</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The <strong>compound annual growth rate (CAGR)</strong> of a company's dividend over the last 5 years. A company paying $1.00 five years ago and $1.50 today has roughly a 8.4% 5-year growth rate. Consistent growers are more reliable income sources.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Compound_annual_growth_rate" target="_blank" class="res-link">wiki Wikipedia: CAGR</a><a href="https://www.youtube.com/watch?v=2STkmbf0jzA" target="_blank" class="res-link">video Dividend Growth Strategy</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="consecutive years streak aristocrat king dividend increase"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-dividend">CON</span><span class="metric-name">Consecutive Years</span><span class="metric-brief">Streak of annual dividend increases</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">How many <strong>years in a row</strong> a company has raised its dividend. 25+ years = <strong>Dividend Aristocrat</strong>. 50+ years = <strong>Dividend King</strong>. This streak is a powerful signal of management's commitment to returning cash to shareholders.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/S%26P_500_Dividend_Aristocrats" target="_blank" class="res-link">wiki Wikipedia: Dividend Aristocrats</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="ex dividend date record payment ex-div"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-dividend">EXD</span><span class="metric-name">Ex-Dividend Date</span><span class="metric-brief">Last day to buy for the next payout</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The cutoff date — you must own the stock <strong>before</strong> this date to receive the upcoming dividend payment. If you buy on or after the ex-dividend date, the seller gets the dividend, not you.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Ex-dividend_date" target="_blank" class="res-link">wiki Wikipedia: Ex-Dividend Date</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="graham number benjamin value intrinsic formula"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-dividend">GRM</span><span class="metric-name">Graham Number</span><span class="metric-brief">Ben Graham's intrinsic value formula</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">A valuation formula created by <strong>Benjamin Graham</strong> (Warren Buffett's mentor and the father of value investing). It calculates the maximum price a defensive investor should pay for a stock based on its earnings and book value.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">Graham Number = √(22.5 × EPS × Book Value per Share)</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Why it matters</div><div class="explain-text">If a stock's price is <strong>below</strong> its Graham Number, it may be undervalued by conservative standards. SEESAW uses a <strong>bond-adjusted</strong> version that accounts for current interest rates, making it more relevant to today's market.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Benjamin_Graham_formula" target="_blank" class="res-link">wiki Wikipedia: Graham Formula</a><a href="https://www.youtube.com/watch?v=xMXEBWmGJkU" target="_blank" class="res-link">video Graham Number Explained</a><a href="https://en.wikipedia.org/wiki/The_Intelligent_Investor" target="_blank" class="res-link">wiki The Intelligent Investor</a></div></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- SECTION 4: MARKET DATA -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="section" data-category="market" id="sec-market">
+    <div class="section-header" onclick="toggleSection(this)">
+      
+      <div class="section-title">
+        <h2>Market Data</h2>
+        <div class="count">5 metrics — trading & size context</div>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="metric" data-search="market cap capitalization total value size"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-market">MCAP</span><span class="metric-name">Market Cap</span><span class="metric-brief">Total company value</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The <strong>total market value of a company's outstanding shares</strong>. It tells you the overall size of the company as the market sees it. Apple at ~$3T is a mega-cap; a $500M company is a small-cap.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">Market Cap = Share Price × Total Shares Outstanding</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Market_capitalization" target="_blank" class="res-link">wiki Wikipedia: Market Cap</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="volume shares traded liquidity daily"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-market">VOL</span><span class="metric-name">Volume</span><span class="metric-brief">Shares traded today</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The <strong>number of shares bought and sold</strong> during the current trading day. High volume means lots of interest and liquidity. Low volume means the stock is thinly traded, which can lead to larger price swings.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Volume_(finance)" target="_blank" class="res-link">wiki Wikipedia: Trading Volume</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="volume ratio relative average unusual activity volr"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-market">VOLR</span><span class="metric-name">Volume Ratio</span><span class="metric-brief">Today's volume vs. average</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Today's trading volume <strong>divided by the average daily volume</strong> (typically 20-day or 50-day average). A ratio of 2.0 means twice the normal volume — something unusual is happening. Ratios above 1.5 often signal news, earnings, or institutional activity.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">Volume Ratio = Today's Volume / Average Daily Volume</div></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- SECTION 5: TECHNICAL INDICATORS -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="section" data-category="technical" id="sec-technical">
+    <div class="section-header" onclick="toggleSection(this)">
+      
+      <div class="section-title">
+        <h2>Technical Indicators</h2>
+        <div class="count">8 indicators — price action & momentum</div>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="metric" data-search="sma20 simple moving average 20 day trend"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">SMA20</span><span class="metric-name">SMA 20</span><span class="metric-brief">20-day Simple Moving Average</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The <strong>average closing price over the last 20 trading days</strong>. It smooths out daily noise to show the short-term trend. If the price is above the SMA20, the stock is in a short-term uptrend; below it means a downtrend.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">SMA20 = (Sum of last 20 closing prices) / 20</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Moving_average" target="_blank" class="res-link">wiki Wikipedia: Moving Average</a><a href="https://www.youtube.com/watch?v=4R2CDbQWGB0" target="_blank" class="res-link">video Moving Averages Explained</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="sma50 simple moving average 50 day medium trend"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">SMA50</span><span class="metric-name">SMA 50</span><span class="metric-brief">50-day Simple Moving Average</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The <strong>average closing price over 50 trading days</strong>. A key medium-term trend indicator. The <strong>golden cross</strong> (SMA50 crosses above SMA200) and <strong>death cross</strong> (SMA50 crosses below SMA200) are two of the most watched signals in technical analysis.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Moving_average_crossover" target="_blank" class="res-link">wiki Wikipedia: MA Crossovers</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="ema12 exponential moving average 12 day fast signal"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">EMA12</span><span class="metric-name">EMA 12</span><span class="metric-brief">12-day Exponential Moving Average</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Like SMA but gives <strong>more weight to recent prices</strong>, making it more responsive to new information. The 12-day EMA is the "fast line" — it reacts quickly to price changes and is a key component of MACD.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">SMA vs EMA</div><div class="explain-text"><strong>SMA</strong> treats all days equally. <strong>EMA</strong> emphasizes recent days more. EMA reacts faster to new trends but can give more false signals. Most traders use both.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Exponential_smoothing" target="_blank" class="res-link">wiki Wikipedia: Exponential MA</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="ema26 exponential moving average 26 day slow signal"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">EMA26</span><span class="metric-name">EMA 26</span><span class="metric-brief">26-day Exponential Moving Average</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The "slow line" counterpart to EMA12. The <strong>difference between EMA12 and EMA26</strong> is what creates the MACD indicator. When EMA12 crosses above EMA26, it signals bullish momentum; below signals bearish.</div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="bollinger bands bb volatility standard deviation squeeze"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">BB</span><span class="metric-name">Bollinger Bands</span><span class="metric-brief">Volatility bands around price</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Three lines plotted around the price: a <strong>20-day SMA in the middle</strong>, with an <strong>upper band</strong> (+2 standard deviations) and <strong>lower band</strong> (-2 standard deviations). When the bands squeeze tight, a big move is coming. When price touches the upper band, the stock may be overbought; lower band, oversold.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">Upper Band = SMA20 + (2 × StdDev)
+Middle Band = SMA20
+Lower Band = SMA20 − (2 × StdDev)</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Bollinger_Bands" target="_blank" class="res-link">wiki Wikipedia: Bollinger Bands</a><a href="https://www.youtube.com/watch?v=lbVTRPYbSBg" target="_blank" class="res-link">video Bollinger Bands Tutorial</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="rsi relative strength index overbought oversold momentum 70 30"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">RSI</span><span class="metric-name">RSI (Relative Strength Index)</span><span class="metric-brief">Momentum oscillator (0–100)</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">A momentum indicator that measures the <strong>speed and magnitude of recent price changes</strong> on a scale of 0 to 100. <strong>Above 70</strong> = potentially overbought (due for a pullback). <strong>Below 30</strong> = potentially oversold (due for a bounce). It's one of the most widely used technical indicators.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">RSI = 100 − (100 / (1 + RS))
+RS = Average Gain over 14 periods / Average Loss over 14 periods</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Relative_strength_index" target="_blank" class="res-link">wiki Wikipedia: RSI</a><a href="https://www.youtube.com/watch?v=wMOEqMl3nHQ" target="_blank" class="res-link">video RSI Trading Strategy</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="macd moving average convergence divergence signal histogram"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">MACD</span><span class="metric-name">MACD</span><span class="metric-brief">Trend & momentum indicator</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">One of the most popular technical indicators. It shows the <strong>relationship between two EMAs</strong> (12-day and 26-day). When the MACD line crosses above the signal line, it's a bullish signal; below is bearish. The histogram shows the strength of the momentum.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">MACD Line = EMA12 − EMA26
+Signal Line = 9-day EMA of MACD Line
+Histogram = MACD Line − Signal Line</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/MACD" target="_blank" class="res-link">wiki Wikipedia: MACD</a><a href="https://www.youtube.com/watch?v=eob4rg78o4Y" target="_blank" class="res-link">video MACD Masterclass</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="vwap volume weighted average price institutional benchmark"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-technical">VWAP</span><span class="metric-name">VWAP</span><span class="metric-brief">Volume-Weighted Average Price</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">The <strong>average price a stock has traded at throughout the day</strong>, weighted by volume. It's the benchmark institutions use to judge execution quality. If you bought below VWAP, you got a "good fill." Price above VWAP = bullish intraday; below = bearish.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">VWAP = Σ(Price × Volume) / Σ(Volume)</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Volume-weighted_average_price" target="_blank" class="res-link">wiki Wikipedia: VWAP</a></div></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- SECTION 6: FUNDAMENTALS -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="section" data-category="fundamental" id="sec-fundamental">
+    <div class="section-header" onclick="toggleSection(this)">
+      
+      <div class="section-title">
+        <h2>Fundamental Analysis</h2>
+        <div class="count">6 categories — the financial foundation</div>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="metric" data-search="quality score overall financial health rating"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-fundamental">QTY</span><span class="metric-name">Quality Score</span><span class="metric-brief">Overall financial quality rating</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">A composite metric that captures <strong>how financially sound</strong> a company is. It incorporates profitability (margins, ROE), stability (low debt, consistent earnings), and efficiency (asset turnover, capital allocation). High-quality companies tend to outperform over long periods.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Quality_investing" target="_blank" class="res-link">wiki Wikipedia: Quality Investing</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="income statement revenue profit loss operating net"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-fundamental">INC</span><span class="metric-name">Income</span><span class="metric-brief">Income statement metrics</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Data from the <strong>income statement</strong> — the financial report showing how much a company earned and spent over a period. Key lines: <strong>Revenue</strong> (total sales), <strong>Cost of Goods Sold</strong>, <strong>Operating Income</strong>, and <strong>Net Income</strong> (the bottom line). This is where you see if a company is actually making money.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Income_statement" target="_blank" class="res-link">wiki Wikipedia: Income Statement</a><a href="https://www.youtube.com/watch?v=WEDIj9JBTC8" target="_blank" class="res-link">video Financial Statements Explained</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="cash flow free operating investing financing fcf"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-fundamental">CF</span><span class="metric-name">Cash Flow</span><span class="metric-brief">Cash generation & usage</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Tracks the <strong>actual cash moving in and out</strong> of the business. Unlike earnings (which can be manipulated with accounting tricks), cash flow shows real money. <strong>Free Cash Flow (FCF)</strong> — cash after all expenses and investments — is what's available for dividends, buybacks, and debt repayment.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formula</div><div class="formula-box">Free Cash Flow = Operating Cash Flow − Capital Expenditures</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Cash_flow_statement" target="_blank" class="res-link">wiki Wikipedia: Cash Flow</a><a href="https://en.wikipedia.org/wiki/Free_cash_flow" target="_blank" class="res-link">wiki Wikipedia: Free Cash Flow</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="growth revenue earnings compound annual rate"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-fundamental">GRO</span><span class="metric-name">Growth Metrics</span><span class="metric-brief">Revenue & earnings trajectory</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text">Measures the <strong>rate of increase</strong> in a company's revenue and earnings over time. Includes year-over-year growth, quarter-over-quarter growth, and multi-year compound growth rates. Consistently high growth is the hallmark of great businesses.</div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="margins gross operating net profit percentage"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-fundamental">MRG</span><span class="metric-name">Margins</span><span class="metric-brief">Gross, operating & net margins</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What they are</div><div class="explain-text"><strong>Gross Margin</strong> — revenue minus cost of goods, as a %. How much profit before overhead. <strong>Operating Margin</strong> — profit after all operating expenses. <strong>Net Margin</strong> — the final bottom-line percentage after everything (taxes, interest, etc.). Higher margins = more profitable business model.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Formulas</div><div class="formula-box">Gross Margin = (Revenue − COGS) / Revenue × 100
+Operating Margin = Operating Income / Revenue × 100
+Net Margin = Net Income / Revenue × 100</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Profit_margin" target="_blank" class="res-link">wiki Wikipedia: Profit Margin</a></div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="allocation capital buyback reinvestment spending"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-fundamental">ALC</span><span class="metric-name">Allocation</span><span class="metric-brief">How the company spends its cash</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">What it is</div><div class="explain-text"><strong>Capital allocation</strong> is how management decides to deploy the company's cash: reinvest in the business (R&D, expansion), return to shareholders (dividends, buybacks), pay down debt, or make acquisitions. Great capital allocators compound wealth over decades.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Capital_allocation" target="_blank" class="res-link">wiki Wikipedia: Capital Allocation</a><a href="https://www.youtube.com/watch?v=3FoB7V7gkL4" target="_blank" class="res-link">video Capital Allocation Masterclass</a></div></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- SECTION 7: SCORING METHODOLOGY -->
+  <!-- ════════════════════════════════════════ -->
+  <div class="section" data-category="scoring" id="sec-scoring">
+    <div class="section-header" onclick="toggleSection(this)">
+      
+      <div class="section-title">
+        <h2>SEESAW Scoring System</h2>
+        <div class="count">5 concepts — how scores are built</div>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="metric" data-search="six factor scoring methodology moat growth balance value sentiment dividend"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-scoring">6F</span><span class="metric-name">6-Factor Scoring</span><span class="metric-brief">The core methodology</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">How it works</div><div class="explain-text">Every stock is scored across <strong>six fundamental dimensions</strong>: Moat (competitive advantage), Growth (earnings trajectory), Balance (financial health), Value (price vs. worth), Sentiment (market mood), and Dividend (income quality). Each factor is scored independently, then combined into the Total Score.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Why 6 factors?</div><div class="explain-text">No single metric tells the full story. A cheap stock (high Value) might be cheap for a reason (low Moat). A fast grower (high Growth) might be running on debt (low Balance). The 6-factor system forces a <strong>360° view</strong> of every company.</div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="time horizon short mid long term weighting"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-scoring">TMH</span><span class="metric-name">Time Horizon Scoring</span><span class="metric-brief">Short / Mid / Long weighting</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">How it works</div><div class="explain-text">The same 6 factors are re-weighted for different investment timelines. <strong>Short-term</strong> overweights Sentiment and technicals. <strong>Mid-term</strong> balances Growth and Value. <strong>Long-term</strong> overweights Moat, Balance, and Dividend sustainability. This lets you match stocks to your holding period.</div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="state classification hot warm cold frozen threshold total"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-scoring">STA</span><span class="metric-name">State Classification</span><span class="metric-brief">How HOT/WARM/COLD/FROZEN is assigned</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">How it works</div><div class="explain-text">The Total Score is mapped to one of four states using threshold ranges. HOT = top-tier total scores. WARM = above-average. COLD = below-average. FROZEN = weakest scores. The thresholds are calibrated across the full stock universe so each state represents a meaningful quality tier.</div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="flag rules triple crown value trap expensive growth conditions"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-scoring">FLG</span><span class="metric-name">Flag Rules</span><span class="metric-brief">When special flags are triggered</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">How they work</div><div class="explain-text">Flags are <strong>conditional labels</strong> triggered by specific score patterns:
+          Triple Crown — all three time horizons (Short, Mid, Long) score above a high threshold.
+          Value Trap — high Value score but low Moat and/or declining Growth (looks cheap, but deteriorating).
+          Expensive Growth — high Growth score but low Value score (great business, but overpriced).</div></div>
+        </div></div>
+      </div>
+
+      <div class="metric" data-search="upside calculation intrinsic value graham dcf bond adjusted"><div class="metric-header" onclick="toggleMetric(this)"><span class="metric-tag tag-scoring">UPC</span><span class="metric-name">Upside Calculation</span><span class="metric-brief">How intrinsic value is estimated</span><span class="metric-chevron">▾</span></div>
+        <div class="metric-detail"><div class="metric-content">
+          <div class="detail-layer"><div class="layer-label">How it works</div><div class="explain-text">SEESAW combines multiple valuation models to estimate a stock's <strong>fair intrinsic value</strong>, then compares it to the market price. Models include the <strong>Graham Number</strong> (conservative, earnings + book value), <strong>DCF</strong> (forward-looking cash flow projection), and a <strong>bond-adjusted</strong> version that factors in current interest rates to make valuations more relevant.</div></div>
+          <div class="detail-divider"></div>
+          <div class="detail-layer"><div class="layer-label">Learn More</div><div class="resources"><a href="https://en.wikipedia.org/wiki/Discounted_cash_flow" target="_blank" class="res-link">wiki Wikipedia: DCF</a><a href="https://en.wikipedia.org/wiki/Benjamin_Graham_formula" target="_blank" class="res-link">wiki Wikipedia: Graham Formula</a><a href="https://www.youtube.com/watch?v=fd_emLLzJnk" target="_blank" class="res-link">video Intrinsic Value Explained</a></div></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <a href="https://mfses.vercel.app/dashboard" target="_blank">SEESAW MFSES</a> · Not financial advice · Educational purposes only
+</div>
+
+<script>
+// Toggle section open/close
+function toggleSection(header) {
+  const section = header.parentElement;
+  section.classList.toggle('open');
+}
+
+// Toggle metric open/close
+function toggleMetric(header) {
+  const metric = header.parentElement;
+  metric.classList.toggle('open');
+}
+
+// Nav pills
+document.querySelectorAll('.nav-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    const target = pill.dataset.target;
+    document.querySelectorAll('.section').forEach(sec => {
+      if (target === 'all' || sec.dataset.category === target) {
+        sec.style.display = '';
+      } else {
+        sec.style.display = 'none';
+      }
+    });
+  });
+});
+
+// Search
+document.getElementById('searchBox').addEventListener('input', function(e) {
+  const query = e.target.value.toLowerCase().trim();
+  // Reset nav pills
+  document.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+  if (!query) {
+    document.querySelector('[data-target="all"]').classList.add('active');
+  }
+  
+  document.querySelectorAll('.section').forEach(sec => {
+    let hasMatch = false;
+    sec.querySelectorAll('.metric').forEach(metric => {
+      const searchData = metric.dataset.search || '';
+      const name = metric.querySelector('.metric-name')?.textContent || '';
+      const combined = (searchData + ' ' + name).toLowerCase();
+      if (!query || combined.includes(query)) {
+        metric.style.display = '';
+        hasMatch = true;
+        if (query) metric.classList.add('open');
+      } else {
+        metric.style.display = 'none';
+        metric.classList.remove('open');
+      }
+    });
+    sec.style.display = hasMatch || !query ? '' : 'none';
+    if (hasMatch && query) sec.classList.add('open');
+  });
+});
+
+// Progress bar on scroll
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  document.getElementById('progressBar').style.width = progress + '%';
+});
+</script>
+</body>
+</html>
