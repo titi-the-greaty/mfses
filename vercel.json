@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/", "destination": "/homepage/index.html" },
     { "source": "/dashboard", "destination": "/dashboard/index.html" },
-    { "source": "/learn", "destination": "/learn/index.html" }
+    { "source": "/learn", "destination": "/learn/index.html" },
+    { "source": "/whalewatch", "destination": "/whalewatch-app/index.html" }
   ]
 }
