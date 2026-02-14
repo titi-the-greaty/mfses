@@ -27,9 +27,9 @@ export default defineConfig({
       }
     }
   },
-  base: '/whalewatch-app/',
+  base: '/whalewatch/',
   build: {
-    outDir: '../whalewatch-app',
+    outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false
   }
