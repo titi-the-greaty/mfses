@@ -27,7 +27,7 @@ export default defineConfig({
       }
     }
   },
-  base: '/whalewatch/',
+  base: '/whalewatch/dist/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
