@@ -3,7 +3,6 @@
     { "source": "/", "destination": "/homepage/index.html" },
     { "source": "/dashboard", "destination": "/dashboard/index.html" },
     { "source": "/learn", "destination": "/learn/index.html" },
-    { "source": "/whalewatch", "destination": "/whalewatch/dist/index.html" },
-    { "source": "/whalewatch/(.*)", "destination": "/whalewatch/dist/index.html" }
+    { "source": "/whalewatch", "destination": "/whalewatch/dist/index.html" }
   ]
 }
